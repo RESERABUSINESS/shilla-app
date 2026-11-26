@@ -16,6 +16,7 @@
     "expo-splash-screen": "~58.0.14",
     "expo-status-bar": "~58.0.5",
     "expo-system-ui": "~58.0.7",
+    "expo-updates": "~58.0.22",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-native": "0.88.1",
@@ -40,7 +41,8 @@
     "web": "expo start --web",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test:db": "scripts/db-test/run.sh"
+    "test:db": "scripts/db-test/run.sh",
+    "publish:preview": "eas update --branch preview --platform all"
   },
   "private": true
 }

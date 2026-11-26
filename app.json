@@ -52,7 +52,17 @@
     },
     "extra": {
       "supportsRTL": true,
-      "forcesRTL": true
+      "forcesRTL": true,
+      "eas": {
+        "projectId": "c851e70a-3a83-4274-85dd-f4abc5e4de71"
+      }
+    },
+    "owner": "abdullah-drdrs-team",
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/c851e70a-3a83-4274-85dd-f4abc5e4de71"
     }
   }
 }
