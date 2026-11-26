@@ -1,0 +1,551 @@
+<title>شلة</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Readex+Pro:wght@500;600;700&display=swap">
+<style>
+/* Layout: one phone-sized app column centered on desktop with a short guide beside it; full-bleed app on phones */
+:root{
+  --bg:#E9EFEC; --surface:#FFFFFF; --surface2:#F3F7F5; --line:#D9E2DD; --fg:#13201B; --muted:#5B6C65;
+  --acc-m:#17624F; --acc-f:#8A3F7A; --on-acc:#FFFFFF; --ball:#E2EE4A; --on-ball:#1A2410; --ok:#1E7F47; --warn:#9A6414;
+  --display:"Readex Pro","IBM Plex Sans Arabic",Tahoma,sans-serif;
+  --body:"IBM Plex Sans Arabic",Tahoma,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1210; --surface:#15201C; --surface2:#101915; --line:#26342F; --fg:#E4EDE9; --muted:#8FA29A;
+  --acc-m:#46B898; --acc-f:#D481C2; --on-acc:#0B1210; --ball:#E2EE4A; --on-ball:#1A2410; --ok:#55C486; --warn:#E2AA52; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1210; --surface:#15201C; --surface2:#101915; --line:#26342F; --fg:#E4EDE9; --muted:#8FA29A;
+  --acc-m:#46B898; --acc-f:#D481C2; --on-acc:#0B1210; --ball:#E2EE4A; --on-ball:#1A2410; --ok:#55C486; --warn:#E2AA52; color-scheme:dark}
+
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);display:flex;align-items:center;justify-content:center;gap:48px;
+  padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));box-sizing:border-box}
+*{box-sizing:border-box}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--acc-m);outline-offset:2px}
+
+.guide{max-width:300px;display:flex;flex-direction:column;gap:14px}
+.guide h1{font:700 26px/1.3 var(--display);margin:0;text-wrap:balance}
+.guide p{margin:0;color:var(--muted);line-height:1.8}
+.guide ol{margin:0;padding-inline-start:20px;display:flex;flex-direction:column;gap:8px;line-height:1.7}
+.guide small{color:var(--muted)}
+@media (max-width:900px){.guide{display:none}}
+
+.phone{--acc:var(--acc-m);position:relative;width:100%;max-width:400px;height:min(840px,calc(100vh - 48px));border-radius:30px;
+  border:1px solid var(--line);overflow:hidden;display:flex;flex-direction:column;background:var(--surface2);box-shadow:0 24px 60px -30px rgba(10,30,20,.35)}
+.phone[data-g="f"]{--acc:var(--acc-f)}
+@media (max-width:520px){
+  body{padding:0}
+  .phone{max-width:none;height:100%;border-radius:0;border:0;box-shadow:none}
+}
+.pad{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* header */
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-block:14px 10px;background:var(--surface);border-bottom:1px solid var(--line)}
+.logo{font:700 22px var(--display);display:flex;align-items:center;gap:6px}
+.logo i{width:10px;height:10px;border-radius:50%;background:var(--ball);box-shadow:inset 0 0 0 2px var(--acc)}
+.loc{font-size:12px;color:var(--muted)}
+.gpill{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:6px 10px;border-radius:999px;
+  background:color-mix(in srgb,var(--acc) 14%,var(--surface));color:var(--acc)}
+.gpill svg{width:14px;height:14px}
+
+.scroll{flex:1;overflow-y:auto;padding-block:14px 96px;display:flex;flex-direction:column;gap:14px}
+.h2{font:600 17px var(--display);margin:0}
+.sub{font-size:13px;color:var(--muted);margin:0;line-height:1.7}
+.row{display:flex;align-items:center;gap:8px}
+.between{display:flex;align-items:center;justify-content:space-between;gap:8px}
+
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;flex:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:500}
+.chip.on{background:var(--acc);color:var(--on-acc);border-color:var(--acc)}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.card.sel{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
+.ttl{font-weight:600;font-size:15px}
+.meta{font-size:12.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 12px}
+.emo{width:42px;height:42px;flex:none;border-radius:12px;display:grid;place-items:center;font-size:22px;background:color-mix(in srgb,var(--acc) 12%,var(--surface2))}
+.tag{font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:6px;background:var(--surface2);color:var(--muted);border:1px solid var(--line);white-space:nowrap}
+.tag.acc{color:var(--acc);border-color:color-mix(in srgb,var(--acc) 35%,var(--line));background:color-mix(in srgb,var(--acc) 8%,var(--surface))}
+.tag.ok{color:var(--ok)}
+
+.btn{border:0;border-radius:12px;padding:9px 14px;font-weight:600;font-size:14px;background:var(--surface2);border:1px solid var(--line)}
+.btn.pri{background:var(--acc);color:var(--on-acc);border-color:var(--acc)}
+.btn.done{background:color-mix(in srgb,var(--ok) 12%,var(--surface));color:var(--ok);border-color:color-mix(in srgb,var(--ok) 35%,var(--line))}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn.block{width:100%;padding:13px}
+.btns{display:flex;gap:8px}
+.btns .btn{flex:1}
+
+.prog{height:6px;border-radius:6px;background:var(--surface2);overflow:hidden;border:1px solid var(--line)}
+.prog b{display:block;height:100%;background:var(--acc);border-radius:6px}
+.avs{display:flex}
+.av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:color-mix(in srgb,var(--acc) 20%,var(--surface));
+  color:var(--acc);border:2px solid var(--surface);margin-inline-start:-8px}
+.avs .av:first-child{margin-inline-start:0}
+.av.lg{width:46px;height:46px;font-size:17px;margin:0;border:0}
+.av.hid{background:var(--surface2);color:var(--muted)}
+.av svg{width:18px;height:18px}
+.match{font:700 13px var(--display);background:var(--ball);color:var(--on-ball);padding:4px 8px;border-radius:8px;white-space:nowrap;font-variant-numeric:tabular-nums}
+
+/* map */
+.map{position:relative;height:180px;border-radius:16px;overflow:hidden;border:1px solid var(--line);flex:none;
+  background:
+   linear-gradient(28deg,transparent 47%,var(--line) 47%,var(--line) 53%,transparent 53%),
+   linear-gradient(-62deg,transparent 48%,var(--line) 48%,var(--line) 52%,transparent 52%),
+   repeating-linear-gradient(0deg,transparent 0 27px,color-mix(in srgb,var(--line) 55%,transparent) 27px 28px),
+   repeating-linear-gradient(90deg,transparent 0 27px,color-mix(in srgb,var(--line) 55%,transparent) 27px 28px),
+   var(--surface)}
+.pin{position:absolute;transform:translate(50%,-100%);border:0;background:none;padding:0;font-size:12px}
+.pin span{display:grid;place-items:center;width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--surface);border:2px solid var(--acc)}
+.pin span em{transform:rotate(45deg);font-style:normal;font-size:14px}
+.pin.on span{background:var(--acc)}
+.me{position:absolute;left:50%;top:55%;width:14px;height:14px;border-radius:50%;background:var(--acc);transform:translate(-50%,-50%);
+  box-shadow:0 0 0 6px color-mix(in srgb,var(--acc) 25%,transparent)}
+.maplbl{position:absolute;bottom:8px;right:8px;font-size:11px;background:var(--surface);border:1px solid var(--line);padding:3px 8px;border-radius:6px;color:var(--muted)}
+
+/* nav */
+.nav{position:absolute;bottom:0;left:0;right:0;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:1px solid var(--line);
+  padding-block:8px 10px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+.nav button{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11.5px;color:var(--muted);font-weight:500}
+.nav button svg{width:22px;height:22px}
+.nav button.on{color:var(--acc);font-weight:700}
+svg.i{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.fab{position:absolute;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(78px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:6px;
+  background:var(--acc);color:var(--on-acc);border:0;border-radius:16px;padding:12px 16px;font-weight:700;box-shadow:0 10px 24px -10px rgba(0,0,0,.45)}
+.fab svg{width:18px;height:18px}
+
+/* modal */
+.ov{position:absolute;inset:0;background:rgba(5,15,10,.45);display:flex;align-items:flex-end;z-index:5}
+.sheet{width:100%;max-height:88%;background:var(--surface);border-radius:22px 22px 0 0;display:flex;flex-direction:column;overflow:hidden}
+.sheet-h{display:flex;align-items:center;justify-content:space-between;padding-block:14px;border-bottom:1px solid var(--line)}
+.sheet-b{overflow-y:auto;padding-block:14px 18px;display:flex;flex-direction:column;gap:12px}
+.x{background:var(--surface2);border:1px solid var(--line);border-radius:10px;width:34px;height:34px;font-size:18px;line-height:1}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600}
+select,input[type=text]{width:100%;border:1px solid var(--line);background:var(--surface2);border-radius:12px;padding:11px 12px;font-size:14px}
+.note{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.7;padding:10px 12px;border-radius:12px;
+  background:color-mix(in srgb,var(--acc) 9%,var(--surface));color:var(--fg);border:1px solid color-mix(in srgb,var(--acc) 25%,var(--line))}
+.note svg{width:16px;height:16px;flex:none;margin-top:3px;color:var(--acc)}
+
+.msgs{display:flex;flex-direction:column;gap:8px;min-height:220px}
+.msg{max-width:80%;padding:8px 12px;border-radius:14px;font-size:14px;line-height:1.6;background:var(--surface2);border:1px solid var(--line);align-self:flex-start}
+.msg small{display:block;font-size:11px;color:var(--muted);font-weight:600}
+.msg.me{align-self:flex-end;background:var(--acc);color:var(--on-acc);border-color:var(--acc)}
+.compose{display:flex;gap:8px;padding-block:10px 14px;border-top:1px solid var(--line)}
+
+.toast{position:absolute;left:16px;right:16px;bottom:calc(136px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:11px 14px;border-radius:12px;
+  font-size:13.5px;z-index:9;text-align:center;animation:up .25s ease}
+@keyframes up{from{transform:translateY(8px);opacity:.4}}
+@media (prefers-reduced-motion:reduce){.toast{animation:none}}
+
+/* onboarding */
+.ob{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:16px;padding-block:28px 20px}
+.hero-mark{font:700 54px/1 var(--display);display:flex;align-items:center;gap:10px;margin-top:20px}
+.hero-mark i{width:22px;height:22px;border-radius:50%;background:var(--ball);box-shadow:inset 0 0 0 4px var(--acc)}
+.big{font:600 22px/1.5 var(--display);margin:0;text-wrap:balance}
+.feat{display:flex;flex-direction:column;gap:10px}
+.feat div{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.7}
+.feat b{flex:none;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:color-mix(in srgb,var(--acc) 14%,var(--surface));color:var(--acc);font-size:13px}
+.gsel{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gsel button{border:1.5px solid var(--line);background:var(--surface);border-radius:16px;padding:16px 10px;display:flex;flex-direction:column;gap:4px;align-items:center;font-weight:700}
+.gsel button span{font-size:12px;font-weight:500;color:var(--muted)}
+.gsel button.on{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 10%,var(--surface));color:var(--acc)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tile{border:1.5px solid var(--line);background:var(--surface);border-radius:14px;padding:12px 4px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:13px;font-weight:600}
+.tile em{font-style:normal;font-size:24px}
+.tile.on{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 10%,var(--surface));color:var(--acc)}
+.lvrow{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--surface2);padding:3px;border-radius:10px;border:1px solid var(--line)}
+.seg button{border:0;background:none;border-radius:8px;padding:6px 2px;font-size:11.5px;font-weight:500}
+.seg button.on{background:var(--surface);color:var(--acc);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.steps{display:flex;gap:6px}
+.steps i{flex:1;height:4px;border-radius:4px;background:var(--line)}
+.steps i.on{background:var(--acc)}
+.foot{padding-block:12px 16px;border-top:1px solid var(--line);background:var(--surface)}
+.spin{width:18px;height:18px;border-radius:50%;border:2px solid currentColor;border-top-color:transparent;display:inline-block;animation:sp 0.8s linear infinite;vertical-align:middle}
+@keyframes sp{to{transform:rotate(360deg)}}
+.tog{width:42px;height:24px;border-radius:999px;background:var(--line);border:0;position:relative;flex:none}
+.tog::after{content:"";position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:var(--surface);transition:right .15s}
+.tog.on{background:var(--acc)}
+.tog.on::after{right:21px}
+.cat{font:600 13px var(--display);color:var(--muted);margin:6px 0 -6px}
+.kseg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--surface);padding:3px;border-radius:12px;border:1px solid var(--line);flex:none}
+.kseg button{border:0;background:none;border-radius:9px;padding:7px 2px;font-size:13px;font-weight:500}
+.kseg button.on{background:var(--acc);color:var(--on-acc);font-weight:700}
+.tag.ws{background:var(--ball);color:var(--on-ball);border-color:transparent}
+.host{font-size:12px;color:var(--muted)}
+.works{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.works div{aspect-ratio:1;max-width:100%;border-radius:12px;display:grid;place-items:center;font-size:12px;color:var(--muted);border:1px solid var(--line)}
+.works .w1{background:radial-gradient(circle at 50% 60%,color-mix(in srgb,var(--warn) 55%,var(--surface)) 0 28%,transparent 29%),var(--surface2)}
+.works .w2{background:radial-gradient(ellipse 30% 38% at 50% 55%,color-mix(in srgb,var(--acc) 45%,var(--surface)) 0 99%,transparent),var(--surface2)}
+.works .add{border-style:dashed;background:var(--surface)}
+.empty{text-align:center;color:var(--muted);font-size:14px;padding:30px 10px;line-height:1.8}
+</style>
+
+<div class="guide" dir="rtl">
+  <h1>شلة: نموذج تجريبي</h1>
+  <p>تطبيق يجمع أصحاب الهوايات: رياضة، فخار، رسم، قراءة، قهوة، هايكنج وغيرها. تختار هواياتك، ويطلع لك الأماكن القريبة والناس اللي يشاركونك نفس الاهتمام، وتنضم لجلسة أو تحجز ورشة.</p>
+  <ol>
+    <li>سجّل واختر بنت أو ولد (التحقق عبر نفاذ هنا تجريبي)</li>
+    <li>اختر هواياتك ومستواك في كل وحدة</li>
+    <li>انضم لجلسة أعضاء، احجز ورشة من استوديو، أو أنشئ جلسة جديدة</li>
+    <li>من «حسابي» حوّل للجهة الثانية، وبتشوف إن الجلسات والناس والأماكن كلها مختلفة</li>
+  </ol>
+  <small>الأماكن والأشخاص في النموذج أمثلة وهمية.</small>
+</div>
+
+<div class="phone" id="app" dir="rtl" lang="ar"></div>
+
+<script>
+document.documentElement.dir='rtl';document.documentElement.lang='ar';
+const A=n=>Number(n).toLocaleString('ar-SA');
+const CATS={sport:'رياضة',craft:'فنون وحِرف',culture:'ثقافة',food:'طبخ وقهوة',adv:'مغامرات',games:'ألعاب'};
+const HOB={
+ padel:{c:'sport',n:'بادل',e:'🏓',need:4,txt:'٤ لاعبين (زوجي)'},
+ tennis:{c:'sport',n:'تنس',e:'🎾',need:2,txt:'لاعبَين (أو ٤ زوجي)'},
+ football:{c:'sport',n:'كرة قدم',e:'⚽',need:10,team:1,txt:'فريقين، ٥ ضد ٥'},
+ basketball:{c:'sport',n:'كرة سلة',e:'🏀',need:6,team:1,txt:'فريقين، ٣ ضد ٣'},
+ running:{c:'sport',n:'جري',e:'🏃',need:0,txt:'مجموعة مفتوحة',lv:['أبطأ من ٧ د/كم','٥–٧ د/كم','أسرع من ٥ د/كم']},
+ swimming:{c:'sport',n:'سباحة',e:'🏊',need:0,txt:'مجموعة مفتوحة'},
+ yoga:{c:'sport',n:'يوغا',e:'🧘',need:0,txt:'مجموعة مفتوحة'},
+ pottery:{c:'craft',n:'فخار',e:'🏺',need:8,txt:'٤ إلى ٨ مشاركين',lv:['أول مرة','جربت قبل','أشتغل على العجلة']},
+ painting:{c:'craft',n:'رسم',e:'🎨',need:10,txt:'٤ إلى ١٠ مشاركين'},
+ calligraphy:{c:'craft',n:'خط عربي',e:'✒️',need:8,txt:'حتى ٨ مشاركين'},
+ crochet:{c:'craft',n:'كروشيه',e:'🧶',need:8,txt:'حتى ٨ مشاركين'},
+ reading:{c:'culture',n:'نادي قراءة',e:'📚',need:12,txt:'٦ إلى ١٢ عضو',lv:['قارئ جديد','كتاب بالشهر','قارئ نهم']},
+ photo:{c:'culture',n:'تصوير',e:'📷',need:0,txt:'جولة مفتوحة',lv:['جوال','كاميرا مبتدئ','محترف']},
+ coffee:{c:'food',n:'قهوة مختصة',e:'☕',need:10,txt:'حتى ١٠ مشاركين',lv:['أحبها وبس','أحضّر في البيت','باريستا']},
+ cooking:{c:'food',n:'طبخ',e:'🍳',need:8,txt:'حتى ٨ مشاركين'},
+ hiking:{c:'adv',n:'هايكنج',e:'🥾',need:0,txt:'مجموعة مفتوحة',lv:['مسارات سهلة','متوسطة','صعبة']},
+ camping:{c:'adv',n:'تخييم',e:'⛺',need:0,txt:'مجموعة مفتوحة'},
+ chess:{c:'games',n:'شطرنج',e:'♟️',need:2,txt:'لاعبَين',lv:['تقييم تحت ١٢٠٠','١٢٠٠–١٦٠٠','فوق ١٦٠٠']},
+ board:{c:'games',n:'ألعاب لوحية',e:'🎲',need:6,txt:'٤ إلى ٦ لاعبين'},
+ gaming:{c:'games',n:'ألعاب إلكترونية',e:'🎮',need:4,txt:'فريق من ٤'}
+};
+const LV=['مبتدئ','متوسط','محترف'];
+const lvName=(h,i)=>(HOB[h].lv||LV)[i];
+const who=h=>HOB[h].c==='sport'||HOB[h].c==='games'?'لاعبين':'مشاركين';
+
+// g: m = رجال فقط, f = نساء فقط, both = مشترك بأوقات منفصلة
+const VENUES=[
+ {id:1,n:'نادي النخبة للتنس',k:'أكاديمية',a:'الملقا',s:['tennis','padel'],d:1.2,r:4.7,g:'both',wm:'٨ م – ١٢ ص للرجال',wf:'٤–٧ م فترة نسائية',p:'١٢٠ ر.س/ساعة',x:30,y:38},
+ {id:2,n:'بادل بوكس الياسمين',k:'ملاعب بادل',a:'الياسمين',s:['padel'],d:2.1,r:4.6,g:'both',wm:'يوميًا للرجال',wf:'السبت والثلاثاء للنساء',p:'٢٠٠ ر.س/ساعة',x:66,y:30},
+ {id:3,n:'ملاعب الصحافة الخماسية',k:'ملعب عشب',a:'الصحافة',s:['football'],d:1.8,r:4.3,g:'m',p:'٢٥٠ ر.س/ساعة',x:22,y:70},
+ {id:4,n:'نادي رشاقة النسائي',k:'نادي نسائي',a:'النرجس',s:['yoga','swimming','basketball','padel'],d:2.6,r:4.8,g:'f',p:'اشتراك أو حصة',x:74,y:68},
+ {id:5,n:'ممشى حي النرجس',k:'ممشى عام',a:'النرجس',s:['running','photo'],d:0.9,r:4.5,g:'both',wm:'مفتوح للجميع',wf:'مسار مضاء ومفتوح للجميع',p:'مجاني',x:46,y:30},
+ {id:6,n:'مسار جبال طويق',k:'نقطة تجمع',a:'غرب الرياض',s:['hiking','camping','photo','running'],d:38,r:4.8,g:'both',wm:'رحلات للشباب',wf:'رحلات نسائية مع مرشدة',p:'مجاني',x:8,y:20},
+ {id:7,n:'صالة مركز الشباب',k:'صالة رياضية',a:'العقيق',s:['basketball'],d:3.3,r:4.1,g:'m',p:'٩٠ ر.س/ساعة',x:84,y:44},
+ {id:8,n:'كافيه بيدق',k:'كافيه ألعاب',a:'حطين',s:['chess','board'],d:2.9,r:4.6,g:'both',wm:'القسم العام',wf:'ركن عائلي ونسائي',p:'طلب مشروب',x:58,y:82},
+ {id:9,n:'أكاديمية سيرف للسيدات',k:'أكاديمية تنس',a:'الربيع',s:['tennis'],d:4.1,r:4.9,g:'f',p:'١٥٠ ر.س/حصة',x:88,y:20},
+ {id:10,n:'استوديو طين',k:'استوديو فخار',a:'الملقا',s:['pottery'],d:1.6,r:4.9,g:'f',p:'ورش من ٢٢٠ ر.س',x:40,y:52},
+ {id:11,n:'ساحة الأبطال',k:'ألعاب إلكترونية',a:'الملقا',s:['gaming'],d:3.7,r:4.4,g:'both',wm:'القسم العام',wf:'غرف خاصة للبنات',p:'٣٥ ر.س/ساعة',x:16,y:52},
+ {id:12,n:'محمصة حَبّة',k:'محمصة قهوة',a:'العارض',s:['coffee'],d:3.1,r:4.7,g:'both',wm:'ورش مسائية للشباب',wf:'ورش صباحية للسيدات',p:'ورش من ١٢٠ ر.س',x:70,y:14},
+ {id:13,n:'مسبح أكوا للرجال',k:'مسبح',a:'الوادي',s:['swimming'],d:4.4,r:4.3,g:'m',p:'٦٠ ر.س/دخول',x:92,y:76},
+ {id:14,n:'ملاعب الفرسان النسائية',k:'ملاعب متعددة',a:'القيروان',s:['football','basketball'],d:3.9,r:4.6,g:'f',p:'١٨٠ ر.س/ساعة',x:28,y:16},
+ {id:15,n:'استوديو توازن',k:'يوغا ولياقة',a:'الملقا',s:['yoga'],d:2.4,r:4.5,g:'m',p:'٨٠ ر.س/حصة',x:62,y:56},
+ {id:16,n:'مرسم ألوان',k:'مرسم ومشغل',a:'النخيل',s:['painting','calligraphy','crochet','pottery'],d:2.8,r:4.6,g:'both',wm:'الأحد والثلاثاء للرجال',wf:'باقي الأيام للنساء',p:'ورش من ١٥٠ ر.س',x:50,y:70},
+ {id:17,n:'مكتبة الصفحات',k:'مكتبة وكافيه',a:'الياسمين',s:['reading','board'],d:2.2,r:4.7,g:'both',wm:'القاعة العامة',wf:'قاعة نسائية',p:'مجاني للأندية',x:78,y:86},
+ {id:18,n:'مطبخ نكهة التعليمي',k:'مطبخ تعليمي',a:'الصحافة',s:['cooking','coffee'],d:2.5,r:4.5,g:'both',wm:'دورات مسائية',wf:'دورات صباحية للسيدات',p:'دورات من ٢٠٠ ر.س',x:20,y:84}
+];
+const PLAYERS={
+ m:[{n:'فهد ع.',s:{padel:1,football:1,tennis:2},d:1.4,av:'مساءً'},{n:'سعود م.',s:{padel:1,running:1,coffee:2},d:2.2,av:'الويكند'},
+    {n:'تركي ق.',s:{football:2,basketball:1},d:3.0,av:'مساءً'},{n:'خالد ر.',s:{running:2,hiking:2,camping:1},d:0.8,av:'الفجر'},
+    {n:'نايف س.',s:{chess:1,board:2,gaming:2},d:2.7,av:'بعد العشاء'},{n:'يزيد ح.',s:{tennis:1,padel:0,photo:1},d:1.9,av:'مساءً'},
+    {n:'ماجد ش.',s:{basketball:2,reading:1},d:4.5,av:'الويكند'},{n:'عبدالله ف.',s:{coffee:1,running:0,calligraphy:1},d:3.6,av:'الصبح'}],
+ f:[{n:'نورة',s:{padel:1,pottery:1,yoga:1},d:1.1,av:'العصر'},{n:'سارة',s:{running:1,hiking:0,photo:1},d:2.0,av:'الفجر'},
+    {n:'ريم',s:{padel:2,basketball:1},d:3.2,av:'مساءً'},{n:'لمى',s:{reading:2,chess:2},d:2.5,av:'بعد العشاء'},
+    {n:'جود',s:{pottery:0,painting:1,crochet:1},d:1.7,av:'الصبح'},{n:'دانة',s:{tennis:0,padel:0,running:0,coffee:1},d:0.9,av:'العصر'},
+    {n:'شهد',s:{board:1,gaming:1,reading:0},d:4.0,av:'الويكند'},{n:'أريج',s:{pottery:2,coffee:1,cooking:1},d:2.3,av:'مساءً'}]
+};
+let SID=100;
+const mk=(g,sport,v,when,host,joined,lvl,o={})=>({id:++SID,g,sport,v,when,host,joined,lvl,ws:!!o.price,price:o.price,seats:o.seats,dur:o.dur,
+  msgs:o.msgs||[{from:host,t:o.price?'أهلًا فيكم! كل الأدوات علينا، تعالوا بملابس مريحة':'هلا والله! الموعد ثابت، نتقابل قبله بعشر دقايق'}]});
+let SESSIONS=[
+ mk('m','padel',2,'الخميس · ٨:٠٠ م','فهد ع.',['فهد ع.','سعود م.'],1),
+ mk('m','coffee',12,'الجمعة · ٧:٠٠ م','محمصة حَبّة',['سعود م.','عبدالله ف.','بدر ك.','زياد ع.','ريان ح.','مشعل ب.'],0,{price:120,seats:10,dur:'ساعتين'}),
+ mk('m','football',3,'الجمعة · ٩:٣٠ م','تركي ق.',['تركي ق.','ماجد ش.','فهد ع.','بدر ك.','سلطان ن.','راكان م.','زياد ع.'],1),
+ mk('m','hiking',6,'السبت · ٥:٣٠ ص','خالد ر.',['خالد ر.','يزيد ح.','مشعل ب.'],1),
+ mk('m','running',5,'السبت · ٥:٤٥ ص','خالد ر.',['خالد ر.','سعود م.','عبدالله ف.','مشعل ب.','ريان ح.'],1),
+ mk('m','calligraphy',16,'الأحد · ٧:٣٠ م','مرسم ألوان',['عبدالله ف.','ناصر ي.'],0,{price:150,seats:8,dur:'٣ ساعات'}),
+ mk('m','board',8,'الأحد · ٩:٣٠ م','نايف س.',['نايف س.','ماجد ش.'],1),
+ mk('m','tennis',1,'الاثنين · ٩:٠٠ م','يزيد ح.',['يزيد ح.'],1),
+ mk('f','pottery',10,'الخميس · ٥:٠٠ م','استوديو طين',['جود','أريج','غلا','وعد','رهف'],0,{price:250,seats:8,dur:'٣ ساعات، تشمل الطين والحرق'}),
+ mk('f','padel',2,'الثلاثاء · ٥:٠٠ م · فترة نسائية','نورة',['نورة','ريم'],1),
+ mk('f','reading',17,'الأربعاء · ٨:٠٠ م','لمى',['لمى','شهد','لينا','نوف','ملاك'],1,{msgs:[{from:'لمى',t:'كتاب هالشهر: «ثلاثية غرناطة». نتناقش في أول ١٠٠ صفحة'}]}),
+ mk('f','running',5,'السبت · ٦:٠٠ ص','سارة',['سارة','هيفاء','دانة','غلا'],1),
+ mk('f','painting',16,'السبت · ٤:٠٠ م','مرسم ألوان',['جود','نورة','رنا'],0,{price:180,seats:10,dur:'ساعتين ونص'}),
+ mk('f','coffee',12,'الأحد · ١٠:٠٠ ص','محمصة حَبّة',['دانة','أريج','ريما ع.'],0,{price:120,seats:10,dur:'ساعتين'}),
+ mk('f','pottery',10,'الاثنين · ٧:٠٠ م','نورة',['نورة','أريج'],1,{msgs:[{from:'نورة',t:'حجزت عجلتين في الاستوديو، نبغى بنتين معنا نقسم التكلفة'}]}),
+ mk('f','tennis',9,'الخميس · ٤:٠٠ م','دانة',['دانة'],0)
+];
+
+const DEF={m:{padel:1,running:1,coffee:1,hiking:0},f:{padel:1,pottery:0,running:1,reading:1}};
+const S={step:'welcome',gender:'m',name:'محمد',sports:{...DEF.m},tab:'sessions',filter:'all',kind:'all',
+  selV:null,modal:null,draft:null,toast:null,verifying:false,priv:{photo:false,first:false},scroll:{}};
+
+const ic={
+ cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+ pin:'<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>',
+ users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.2a6 6 0 0 1 3.5 5.8"/>',
+ me:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+ lock:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',
+ eyeoff:'<path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c6 0 9.5 6 9.5 6a17 17 0 0 1-3 3.7M6.4 7.6A17 17 0 0 0 2.5 12S6 18 12 18a9 9 0 0 0 4-.9"/>'
+};
+const svg=(k,st='')=>`<svg class="i" viewBox="0 0 24 24" aria-hidden="true"${st?` style="${st}"`:''}>${ic[k]}</svg>`;
+const gWord=g=>g==='f'?'البنات':'الشباب';
+const mySports=()=>Object.keys(S.sports);
+const venueOk=v=>v.g==='both'||v.g===S.gender;
+const vById=id=>VENUES.find(v=>v.id===id);
+const vTime=v=>v.g==='both'?(S.gender==='f'?v.wf:v.wm):(v.g==='f'?'للنساء فقط':'للرجال فقط');
+const cap=s=>s.ws?s.seats:HOB[s.sport].need;
+const full=s=>cap(s)>0&&s.joined.length>=cap(s);
+const initial=n=>n.trim()[0];
+
+function toast(t){S.toast=t;render();clearTimeout(toast.h);toast.h=setTimeout(()=>{S.toast=null;render()},2600)}
+
+/* ---------- onboarding ---------- */
+function onboarding(){
+ if(S.step==='welcome') return `
+  <div class="ob pad">
+   <div class="hero-mark">شلة <i></i></div>
+   <p class="big">لاقِ ناس يشاركونك هوايتك، قريبين منك، وتمارسونها سوا.</p>
+   <div class="feat">
+    <div><b>١</b><span>تختار هواياتك: بادل، جري، فخار، رسم، قراءة، قهوة، هايكنج وغيرها</span></div>
+    <div><b>٢</b><span>يطلع لك الملاعب والاستوديوهات والأماكن القريبة لكل هواية</span></div>
+    <div><b>٣</b><span>تنضم لجلسة مع ناس بنفس اهتمامك، أو تحجز ورشة من استوديو</span></div>
+   </div>
+   <div class="note">${svg('lock')}<span>عالم البنات منفصل تمامًا عن عالم الشباب: الناس والجلسات والمحادثات.</span></div>
+  </div>
+  <div class="foot pad"><button class="btn pri block" data-act="go" data-v="verify">ابدأ</button></div>`;
+ if(S.step==='verify') return `
+  <div class="ob pad">
+   <div class="steps"><i class="on"></i><i></i></div>
+   <h2 class="h2">التحقق من الهوية</h2>
+   <p class="sub">نتحقق من الاسم والعمر والجنس عبر نفاذ. الجنس ما يتغير بعد التسجيل، وعلى أساسه تشوف التطبيق.</p>
+   <label class="f">الاسم الأول<input type="text" id="nm" value="${S.name}" maxlength="20"></label>
+   <div class="gsel">
+    <button class="${S.gender==='m'?'on':''}" data-act="gender" data-v="m">شاب<span>تشوف الشباب فقط</span></button>
+    <button class="${S.gender==='f'?'on':''}" data-act="gender" data-v="f">بنت<span>تشوفين البنات فقط</span></button>
+   </div>
+   <p class="sub">في النسخة الحقيقية ما فيه اختيار هنا: الجنس يجي من نفاذ مباشرة.</p>
+  </div>
+  <div class="foot pad"><button class="btn pri block" data-act="verify" ${S.verifying?'disabled':''}>${S.verifying?'<span class="spin"></span> جاري التحقق…':'تحقق عبر نفاذ (تجريبي)'}</button></div>`;
+ return `
+  <div class="ob pad">
+   <div class="steps"><i class="on"></i><i class="on"></i></div>
+   <h2 class="h2">وش هواياتك؟</h2>
+   <p class="sub">اختر وحدة أو أكثر، وحدد مستواك. نستخدمها عشان نطابقك مع ناس قريبين من مستواك.</p>
+   ${Object.entries(CATS).map(([c,cn])=>`<div class="cat">${cn}</div><div class="grid3">${Object.entries(HOB).filter(([,h])=>h.c===c).map(([k,h])=>`<button class="tile ${k in S.sports?'on':''}" data-act="tsport" data-v="${k}" aria-pressed="${k in S.sports}"><em>${h.e}</em>${h.n}</button>`).join('')}</div>`).join('')}
+   ${mySports().length?'<div class="cat">مستواك</div>':''}
+   ${mySports().map(k=>`<div class="lvrow"><b style="font-size:13px">${HOB[k].e} ${HOB[k].n}</b>
+     <div class="seg">${[0,1,2].map(i=>`<button class="${S.sports[k]===i?'on':''}" data-act="lvl" data-v="${k}:${i}">${lvName(k,i)}</button>`).join('')}</div></div>`).join('')}
+  </div>
+  <div class="foot pad"><button class="btn pri block" data-act="finish" ${mySports().length?'':'disabled'}>يلا نبدأ (${A(mySports().length)} هوايات)</button></div>`;
+}
+
+/* ---------- app screens ---------- */
+function chips(){
+ return `<div class="chips"><button class="chip ${S.filter==='all'?'on':''}" data-act="filter" data-v="all">كل هواياتي</button>${
+  mySports().map(k=>`<button class="chip ${S.filter===k?'on':''}" data-act="filter" data-v="${k}">${HOB[k].e} ${HOB[k].n}</button>`).join('')}</div>`;
+}
+const inFilter=sp=>S.filter==='all'?sp in S.sports:sp===S.filter;
+
+function sessionsScreen(){
+ const list=SESSIONS.filter(s=>s.g===S.gender&&inFilter(s.sport)&&(S.kind==='all'||(S.kind==='ws')===s.ws));
+ return `<div class="between"><h2 class="h2">قريب منك هالأسبوع</h2><span class="tag acc">${svg('lock','width:12px;height:12px;vertical-align:-2px')} ${gWord(S.gender)} فقط</span></div>
+ <div class="kseg">${[['all','الكل'],['meet','جلسات أعضاء'],['ws','ورش']].map(([k,l])=>`<button class="${S.kind===k?'on':''}" data-act="kind" data-v="${k}">${l}</button>`).join('')}</div>
+ ${chips()}
+ ${list.length?list.map(sessionCard).join(''):`<div class="empty">ما فيه شي هنا الحين.<br>كن أول واحد وأنشئ جلسة.</div>`}`;
+}
+function sessionCard(s){
+ const h=HOB[s.sport],v=vById(s.v),n=cap(s),j=s.joined.length,mine=s.joined.includes(S.name)||s.host===S.name,isFull=full(s);
+ return `<div class="card">
+  <div class="row" style="align-items:flex-start;gap:12px">
+   <div class="emo">${h.e}</div>
+   <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+    <div class="between"><span class="ttl">${s.ws?`ورشة ${h.n}`:h.n}${h.team?' · فرق':''}</span>${s.ws?`<span class="tag ws">${A(s.price)} ر.س</span>`:`<span class="tag">${lvName(s.sport,s.lvl)}</span>`}</div>
+    <div class="meta"><span>${s.when}</span>${s.ws?`<span>${s.dur}</span>`:''}</div>
+    <div class="meta"><span>${v.n}</span><span>${A(v.d)} كم</span></div>
+    <div class="host">${s.ws?`يقدمها: ${s.host} · ${lvName(s.sport,s.lvl)}`:`ينظمها: ${s.host}`}</div>
+   </div>
+  </div>
+  <div class="between">
+   <div class="avs">${s.joined.slice(0,5).map(p=>`<span class="av" title="${p}">${initial(p)}</span>`).join('')}${j>5?`<span class="av">+${A(j-5)}</span>`:''}</div>
+   <span class="sub" style="font-variant-numeric:tabular-nums">${s.ws?`${A(n-j)} مقاعد متبقية`:(n?`${A(j)} من ${A(n)} ${who(s.sport)}`:`${A(j)} منضمين · مفتوحة`)}</span>
+  </div>
+  ${n?`<div class="prog"><b style="width:${Math.min(100,j/n*100)}%"></b></div>`:''}
+  <div class="btns">
+   ${mine?`<button class="btn done" data-act="join" data-v="${s.id}">${s.host===S.name?'جلستك':(s.ws?'محجوز ✓':'منضم ✓')}</button><button class="btn pri" data-act="chat" data-v="${s.id}">المحادثة</button>`
+     :`<button class="btn pri" data-act="join" data-v="${s.id}" ${isFull?'disabled':''}>${isFull?'مكتملة':(s.ws?'احجز مقعد':'انضم')}</button><button class="btn" data-act="place" data-v="${v.id}">المكان</button>`}
+  </div>
+ </div>`;
+}
+
+function placesScreen(){
+ let list=VENUES.filter(v=>venueOk(v)&&v.s.some(inFilter)).sort((a,b)=>a.d-b.d);
+ if(S.selV){const i=list.findIndex(v=>v.id===S.selV);if(i>0)list.unshift(list.splice(i,1)[0]);}
+ return `<h2 class="h2">أماكن قريبة لهواياتك</h2>${chips()}
+ <div class="map" aria-label="خريطة الأماكن">
+  ${list.map(v=>`<button class="pin ${S.selV===v.id?'on':''}" style="right:${v.x}%;top:${v.y}%" data-act="selv" data-v="${v.id}" aria-label="${v.n}"><span><em>${HOB[v.s.find(inFilter)].e}</em></span></button>`).join('')}
+  <div class="me" title="موقعك"></div><span class="maplbl">الرياض · حي الملقا</span>
+ </div>
+ ${list.length?list.map(v=>`<div class="card ${S.selV===v.id?'sel':''}">
+  <div class="between" style="align-items:flex-start"><div style="min-width:0"><div class="ttl">${v.n}</div><div class="meta"><span>${v.k} · ${v.a}</span><span>${A(v.d)} كم</span><span>★ ${A(v.r)}</span></div></div>
+   <span class="match" style="background:var(--surface2);color:var(--fg);border:1px solid var(--line)">${v.p}</span></div>
+  <div class="row" style="flex-wrap:wrap;gap:6px">${v.s.map(k=>`<span class="tag">${HOB[k].e} ${HOB[k].n}</span>`).join('')}<span class="tag acc">${vTime(v)}</span></div>
+  <div class="btns"><button class="btn pri" data-act="create" data-v="${v.id}">أنشئ جلسة هنا</button><button class="btn" data-act="dir" data-v="${v.id}">الاتجاهات</button></div>
+ </div>`).join(''):`<div class="empty">ما لقينا أماكن مناسبة قريبة لهالهواية.</div>`}`;
+}
+
+function score(p){
+ const shared=Object.keys(p.s).filter(k=>k in S.sports);
+ if(!shared.length) return null;
+ const gap=shared.reduce((t,k)=>t+Math.abs(p.s[k]-S.sports[k]),0)/shared.length;
+ return {shared,pct:Math.max(55,Math.min(98,Math.round(70+shared.length*9-gap*8-p.d*2)))};
+}
+function playersScreen(){
+ const list=PLAYERS[S.gender].map(p=>({p,m:score(p)})).filter(x=>x.m&&(S.filter==='all'||x.m.shared.includes(S.filter))).sort((a,b)=>b.m.pct-a.m.pct);
+ const f=S.gender==='f';
+ return `<h2 class="h2">${f?'بنات':'شباب'} يشاركونك اهتماماتك</h2>
+ <p class="sub">مرتبين حسب التوافق: الهوايات المشتركة، قرب المستوى، والمسافة. نعرض المسافة التقريبية فقط، مو الموقع.</p>
+ ${chips()}
+ ${list.length?list.map(({p,m})=>`<div class="card">
+  <div class="row" style="gap:12px">
+   ${f?`<span class="av lg hid" title="الصورة مخفية">${svg('eyeoff')}</span>`:`<span class="av lg">${initial(p.n)}</span>`}
+   <div style="flex:1;min-width:0"><div class="ttl">${p.n}</div><div class="meta"><span>تقريبًا ${A(Math.round(p.d))} كم</span><span>متاح: ${p.av}</span></div></div>
+   <span class="match">${A(m.pct)}٪</span>
+  </div>
+  <div class="row" style="flex-wrap:wrap;gap:6px">${m.shared.map(k=>`<span class="tag acc">${HOB[k].e} ${HOB[k].n} · ${lvName(k,p.s[k])}</span>`).join('')}</div>
+  <div class="btns"><button class="btn pri" data-act="invite" data-v="${p.n}">ادعُ${f?'ها':'ه'} لجلسة</button></div>
+ </div>`).join(''):`<div class="empty">ما فيه أحد بنفس هالهواية قريب منك حاليًا.</div>`}`;
+}
+
+function profileScreen(){
+ const f=S.gender==='f',crafty=mySports().some(k=>['craft','culture','food'].includes(HOB[k].c));
+ return `<div class="card"><div class="row" style="gap:12px"><span class="av lg">${initial(S.name)}</span>
+   <div style="flex:1"><div class="ttl">${S.name}</div><div class="meta"><span>الرياض · حي الملقا</span></div></div></div>
+   <div class="note">${svg('lock')}<span>الحساب موثّق عبر نفاذ (${f?'أنثى':'ذكر'}). ${f?'تشوفين':'تشوف'} عالم ${gWord(S.gender)} فقط، والجنس ما يتعدل.</span></div></div>
+ <div class="card"><div class="between"><span class="ttl">هواياتي</span><button class="btn" data-act="go" data-v="sports" style="padding:6px 12px;font-size:13px">تعديل</button></div>
+   <div class="row" style="flex-wrap:wrap;gap:6px">${mySports().map(k=>`<span class="tag acc">${HOB[k].e} ${HOB[k].n} · ${lvName(k,S.sports[k])}</span>`).join('')}</div></div>
+ ${crafty?`<div class="card"><div class="between"><span class="ttl">معرض أعمالي</span><span class="host">يظهر ${S.gender==="f"?"للبنات":"للشباب"} فقط</span></div>
+   <div class="works"><div class="w1">${f?'مزهرية':'فنجان'}</div><div class="w2">${f?'صحن':'لوحة'}</div><div class="add">+ أضف عمل</div></div></div>`:''}
+ <div class="card"><span class="ttl">الخصوصية</span>
+   <div class="between"><span class="sub" style="color:var(--fg)">إخفاء صورتي إلا عن اللي معي في الجلسة</span><button class="tog ${S.priv.photo?'on':''}" data-act="priv" data-v="photo" aria-pressed="${S.priv.photo}" aria-label="إخفاء الصورة"></button></div>
+   <div class="between"><span class="sub" style="color:var(--fg)">إظهار الاسم الأول فقط</span><button class="tog ${S.priv.first?'on':''}" data-act="priv" data-v="first" aria-pressed="${S.priv.first}" aria-label="الاسم الأول فقط"></button></div>
+   <div class="between"><span class="sub" style="color:var(--fg)">استقبال الدعوات من الأشخاص الموثقين فقط</span><button class="tog on" aria-pressed="true" aria-label="الدعوات من الموثقين" data-act="noop"></button></div></div>
+ <div class="card" style="border-style:dashed"><span class="ttl">للعرض فقط</span>
+   <p class="sub">في التطبيق الحقيقي ما فيه هالزر. هنا عشان تشوف إن الجهتين منفصلة تمامًا.</p>
+   <button class="btn pri block" data-act="swap">شوف التطبيق من جهة ${f?'الشباب':'البنات'}</button>
+   <button class="btn block" data-act="reset">ابدأ التسجيل من جديد</button></div>`;
+}
+
+function topBar(){
+ return `<div class="top pad"><div><div class="logo">شلة <i></i></div><div class="loc">الرياض · حي الملقا</div></div>
+  <span class="gpill">${svg('lock')} عالم ${gWord(S.gender)}</span></div>`;
+}
+function nav(){
+ const t=[['sessions','الجلسات','cal'],['places','الأماكن','pin'],['players','الناس','users'],['profile','حسابي','me']];
+ return `<nav class="nav pad">${t.map(([k,l,i])=>`<button class="${S.tab===k?'on':''}" data-act="tab" data-v="${k}" aria-current="${S.tab===k}">${svg(i)}${l}</button>`).join('')}</nav>`;
+}
+
+/* ---------- modals ---------- */
+function createModal(){
+ const d=S.draft,h=HOB[d.sport];
+ const vs=VENUES.filter(v=>venueOk(v)&&v.s.includes(d.sport));
+ if(!vs.some(v=>v.id===d.v)) d.v=vs[0]?vs[0].id:null;
+ return `<div class="sheet"><div class="sheet-h pad"><b class="h2">جلسة جديدة</b><button class="x" data-act="close" aria-label="إغلاق">×</button></div>
+ <div class="sheet-b pad">
+  <label class="f">الهواية<select id="d-sport" data-ch="sport">${mySports().map(k=>`<option value="${k}" ${k===d.sport?'selected':''}>${HOB[k].e} ${HOB[k].n}</option>`).join('')}</select></label>
+  <label class="f">المكان<select id="d-v" data-ch="v">${vs.length?vs.map(v=>`<option value="${v.id}" ${v.id===d.v?'selected':''}>${v.n} · ${A(v.d)} كم</option>`).join(''):'<option>ما فيه أماكن مناسبة</option>'}</select></label>
+  <div class="row" style="gap:8px">
+   <label class="f" style="flex:1">اليوم<select id="d-day" data-ch="day">${['بكرة','الخميس','الجمعة','السبت','الأحد'].map(x=>`<option ${x===d.day?'selected':''}>${x}</option>`).join('')}</select></label>
+   <label class="f" style="flex:1">الوقت<select id="d-time" data-ch="time">${['٦:٠٠ ص','١٠:٠٠ ص','٤:٠٠ م','٦:٠٠ م','٨:٠٠ م','٩:٣٠ م'].map(x=>`<option ${x===d.time?'selected':''}>${x}</option>`).join('')}</select></label>
+  </div>
+  <label class="f">المستوى المطلوب<select id="d-lvl" data-ch="lvl">${[0,1,2].map(i=>`<option value="${i}" ${i===d.lvl?'selected':''}>${lvName(d.sport,i)}</option>`).join('')}</select></label>
+  <div class="between card" style="padding:10px 12px;background:var(--surface2)"><span class="sub">العدد المناسب لـ${h.n}</span><b style="font-size:13px">${h.txt}</b></div>
+  <div class="note">${svg('lock')}<span>هذي الجلسة تظهر ${S.gender==="f"?"للبنات":"للشباب"} فقط${d.v&&vById(d.v).g==='both'?`، ووقتها ضمن: ${vTime(vById(d.v))}`:''}.</span></div>
+  <button class="btn pri block" data-act="publish" ${d.v?'':'disabled'}>انشر الجلسة</button>
+  <p class="sub" style="text-align:center">عندك استوديو أو أكاديمية؟ الورش المدفوعة تنزل من لوحة الأماكن.</p>
+ </div></div>`;
+}
+function chatModal(){
+ const s=SESSIONS.find(x=>x.id===S.modal.id),h=HOB[s.sport];
+ return `<div class="sheet" style="height:80%"><div class="sheet-h pad"><div><b class="h2">${h.e} ${s.ws?'ورشة ':''}${h.n} · ${vById(s.v).n}</b><div class="sub">${s.when} · ${A(s.joined.length)} أعضاء</div></div><button class="x" data-act="close" aria-label="إغلاق">×</button></div>
+  <div class="sheet-b pad" id="msgs" style="flex:1"><div class="msgs">${s.msgs.map(m=>`<div class="msg ${m.from===S.name?'me':''}">${m.from===S.name?'':`<small>${m.from}</small>`}${m.t}</div>`).join('')}</div></div>
+  <div class="compose pad"><input type="text" id="chatin" placeholder="اكتب رسالة…" autocomplete="off"><button class="btn pri" data-act="send">إرسال</button></div></div>`;
+}
+
+/* ---------- render ---------- */
+const app=document.getElementById('app');
+function render(){
+ const sc=document.getElementById('scroll');if(sc)S.scroll[S.tab]=sc.scrollTop;
+ app.dataset.g=S.gender;
+ if(S.step!=='app'){app.innerHTML=onboarding()+(S.toast?`<div class="toast" role="status">${S.toast}</div>`:'');return}
+ const scr={sessions:sessionsScreen,places:placesScreen,players:playersScreen,profile:profileScreen}[S.tab]();
+ app.innerHTML=topBar()+`<div class="scroll pad" id="scroll">${scr}</div>`+
+  (S.tab==='sessions'&&!S.modal?`<button class="fab" data-act="create">${svg('plus')} جلسة جديدة</button>`:'')+nav()+
+  (S.modal?`<div class="ov" data-act="ovclose">${S.modal.type==='create'?createModal():chatModal()}</div>`:'')+
+  (S.toast?`<div class="toast" role="status">${S.toast}</div>`:'');
+ const nsc=document.getElementById('scroll');if(nsc)nsc.scrollTop=S.scroll[S.tab]||0;
+ const m=document.getElementById('msgs');if(m)m.scrollTop=m.scrollHeight;
+}
+
+const act={
+ go:v=>{S.step=v;render()},
+ gender:v=>{const nm=document.getElementById('nm');if(nm)S.name=nm.value.trim()||S.name;
+   if(v!==S.gender&&JSON.stringify(S.sports)===JSON.stringify(DEF[S.gender]))S.sports={...DEF[v]};S.gender=v;
+   if(S.name==='محمد'&&v==='f')S.name='ريما';if(S.name==='ريما'&&v==='m')S.name='محمد';render()},
+ verify:()=>{const nm=document.getElementById('nm');S.name=(nm&&nm.value.trim())||S.name;S.verifying=true;render();
+   setTimeout(()=>{S.verifying=false;S.step='sports';S.priv={photo:S.gender==='f',first:S.gender==='f'};render()},1000)},
+ tsport:k=>{if(k in S.sports)delete S.sports[k];else S.sports[k]=0;render()},
+ lvl:v=>{const[k,i]=v.split(':');S.sports[k]=+i;render()},
+ finish:()=>{S.step='app';S.filter='all';S.kind='all';render()},
+ tab:v=>{S.tab=v;render()},
+ kind:v=>{S.kind=v;render()},
+ filter:v=>{S.filter=v;S.selV=null;render()},
+ join:id=>{const s=SESSIONS.find(x=>x.id==id);if(s.host===S.name)return;
+   if(s.joined.includes(S.name)){s.joined=s.joined.filter(n=>n!==S.name);toast(s.ws?'ألغيت حجزك':'انسحبت من الجلسة')}
+   else if(!full(s)){s.joined.push(S.name);s.msgs.push({from:s.host,t:`أهلًا ${S.name}، حياك معنا`});
+     toast(s.ws?`حجزت مقعدك في ورشة ${HOB[s.sport].n} (${A(s.price)} ر.س). الدفع يكون داخل التطبيق في النسخة الحقيقية`:`انضممت لجلسة ${HOB[s.sport].n}. افتح المحادثة ورتّب مع الشلة`)}},
+ chat:id=>{S.modal={type:'chat',id:+id};render();setTimeout(()=>{const i=document.getElementById('chatin');if(i)i.focus()},30)},
+ send:()=>{const i=document.getElementById('chatin');const t=i&&i.value.trim();if(!t)return;const s=SESSIONS.find(x=>x.id===S.modal.id);
+   s.msgs.push({from:S.name,t});render();
+   const others=[s.host,...s.joined].filter((n,ix,a)=>n!==S.name&&a.indexOf(n)===ix);
+   if(others.length){setTimeout(()=>{s.msgs.push({from:others[Math.floor(Math.random()*others.length)],t:['تمام، نشوفكم هناك','أبشر','حلو، أنا جاي','زين، أحد يحتاج شي أجيبه؟'][Math.floor(Math.random()*4)]});if(S.modal&&S.modal.id===s.id)render()},1200)}
+   setTimeout(()=>{const j=document.getElementById('chatin');if(j)j.focus()},30)},
+ place:id=>{S.tab='places';S.selV=+id;S.filter='all';S.scroll.places=0;render()},
+ selv:id=>{S.selV=+id;S.scroll.places=0;render()},
+ dir:id=>toast(`نفتح ${vById(+id).n} في الخرائط (في النسخة الحقيقية)`),
+ create:v=>{const sport=S.filter!=='all'?S.filter:(v?(vById(+v).s.find(k=>k in S.sports)||mySports()[0]):mySports()[0]);
+   if(v&&!vById(+v).s.includes(sport)){toast('هالمكان ما فيه هواية من هواياتك');return}
+   S.draft={sport,v:v?+v:null,day:'الخميس',time:'٨:٠٠ م',lvl:S.sports[sport]??1};S.modal={type:'create'};render()},
+ publish:()=>{const d=S.draft,v=vById(d.v);
+   const when=`${d.day} · ${d.time}${v.g==='both'&&S.gender==='f'?' · فترة نسائية':''}`;
+   SESSIONS.unshift(mk(S.gender,d.sport,d.v,when,S.name,[S.name],d.lvl,{msgs:[{from:S.name,t:'أنشأت الجلسة، حياكم!'}]}));
+   S.modal=null;S.tab='sessions';S.filter='all';S.kind='all';S.scroll.sessions=0;toast(`نُشرت جلستك. تظهر الحين ${S.gender==="f"?"للبنات":"للشباب"} القريبين منك`)},
+ invite:n=>toast(`أرسلنا دعوة لـ${n}`),
+ close:()=>{S.modal=null;render()},
+ priv:k=>{S.priv[k]=!S.priv[k];render()},
+ noop:()=>{},
+ swap:()=>{S.gender=S.gender==='f'?'m':'f';S.name=S.gender==='f'?'ريما':'محمد';S.sports={...DEF[S.gender]};S.priv={photo:S.gender==='f',first:S.gender==='f'};
+   S.tab='sessions';S.filter='all';S.kind='all';S.selV=null;S.scroll={};toast(`تحولت لجهة ${gWord(S.gender)}. لاحظ إن الجلسات والناس كلها مختلفة`)},
+ reset:()=>{S.step='welcome';S.tab='sessions';S.modal=null;S.scroll={};render()}
+};
+app.addEventListener('click',e=>{
+ const b=e.target.closest('[data-act]');if(!b)return;
+ if(b.dataset.act==='ovclose'){if(e.target===b){S.modal=null;render()}return}
+ act[b.dataset.act]&&act[b.dataset.act](b.dataset.v,b);
+});
+app.addEventListener('change',e=>{
+ const k=e.target.dataset.ch;if(!k||!S.draft)return;
+ const val=e.target.value;S.draft[k]=(k==='v'||k==='lvl')?+val:val;
+ if(k==='sport')S.draft.lvl=S.sports[val]??1;render();
+});
+app.addEventListener('keydown',e=>{
+ if(e.key==='Enter'&&e.target.id==='chatin'){e.preventDefault();act.send()}
+ if(e.key==='Escape'&&S.modal){S.modal=null;render()}
+});
+render();
+</script>

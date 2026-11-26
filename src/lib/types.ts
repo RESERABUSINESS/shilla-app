@@ -1,0 +1,69 @@
+// Domain types. Field names mirror the Supabase schema
+// (supabase/migrations) in camelCase.
+
+/** Verified gender. Comes from identity verification and never changes. */
+export type Gender = 'm' | 'f';
+
+/** Who a venue serves: men only, women only, or both at separate times. */
+export type VenueAudience = 'm' | 'f' | 'both';
+
+/** hobbyId -> level index (0 beginner, 1 intermediate, 2 advanced). */
+export type HobbyLevels = Record<string, number>;
+
+export type Profile = {
+  id: string;
+  firstName: string;
+  gender: Gender;
+  city: string;
+  district: string;
+  hobbies: HobbyLevels;
+  privacy: { hidePhoto: boolean; firstNameOnly: boolean };
+};
+
+export type Venue = {
+  id: string;
+  name: string;
+  kind: string;
+  district: string;
+  hobbies: string[];
+  audience: VenueAudience;
+  /** Shown to men when audience is 'both', e.g. "٨ م – ١٢ ص للرجال". */
+  menHours?: string;
+  /** Shown to women when audience is 'both', e.g. "٤–٧ م فترة نسائية". */
+  womenHours?: string;
+  priceLabel: string;
+  rating: number;
+  distanceKm: number;
+};
+
+export type SessionKind = 'meetup' | 'workshop';
+
+export type ChatMessage = { id: string; author: string; text: string; sentAt: string };
+
+export type Session = {
+  id: string;
+  kind: SessionKind;
+  /** Sessions are always locked to one gender: the creator's. */
+  gender: Gender;
+  hobbyId: string;
+  venueId: string;
+  startsAtLabel: string;
+  level: number;
+  hostName: string;
+  /** Capacity. 0 = open group. For workshops, the number of seats. */
+  capacity: number;
+  members: string[];
+  /** Workshops only. */
+  priceSar?: number;
+  durationLabel?: string;
+  messages: ChatMessage[];
+};
+
+export type Person = {
+  id: string;
+  firstName: string;
+  gender: Gender;
+  hobbies: HobbyLevels;
+  distanceKm: number;
+  availability: string;
+};
