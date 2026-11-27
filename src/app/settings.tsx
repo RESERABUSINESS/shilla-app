@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { Pressable, Share, Switch } from 'react-native';
 
 import { Icon } from '@/components/Icon';
-import { Button, Card, Field, Row, Screen, T, useTheme } from '@/components/ui';
+import { Button, Card, Chip, ChipRow, Field, Row, Screen, T, useTheme } from '@/components/ui';
+import { CITIES } from '@/lib/cities';
 import { confirmAction, notice } from '@/lib/confirm';
 import { errorMessage } from '@/lib/remote';
 import { useApp, useProfile } from '@/lib/store';
@@ -13,7 +14,20 @@ import type { NotifyPrefs } from '@/lib/types';
 export default function Settings() {
   const c = useTheme();
   const me = useProfile();
-  const { saveName, setNotifyPrefs, togglePrivacy, signOut, deleteAccount, online, anonymous } = useApp();
+  const { saveName, setNotifyPrefs, togglePrivacy, signOut, deleteAccount, online, anonymous, updateLocation, setCity } = useApp();
+  const [locating, setLocating] = useState(false);
+
+  const locate = async () => {
+    setLocating(true);
+    try {
+      const ok = await updateLocation();
+      if (!ok) notice('ما قدرنا نحدد موقعك', 'اسمح لشلة بالوصول للموقع من إعدادات الجوال، أو اختر مدينتك من القائمة.');
+    } catch (e) {
+      notice('ما قدرنا نحفظ', errorMessage(e));
+    } finally {
+      setLocating(false);
+    }
+  };
   const [name, setName] = useState(me.firstName);
   const [savingName, setSavingName] = useState(false);
   const f = me.gender === 'f';
@@ -61,6 +75,24 @@ export default function Settings() {
           disabled={savingName || name.trim().length < 2 || name.trim() === me.firstName}
           onPress={updateName}
         />
+      </Card>
+
+      <Card>
+        <T style={{ fontWeight: '700' }}>موقعك</T>
+        <T>{`${me.city || 'ما حددته'}${me.district ? ` · ${me.district}` : ''}`}</T>
+        <T variant="small">نستخدمه عشان نعرض لك الأماكن والجلسات والناس القريبين. موقعك الدقيق ما يشوفه أحد.</T>
+        <Button kind="secondary" label={locating ? 'جاري تحديد موقعك…' : 'حدّث موقعي من الجوال'} disabled={locating} onPress={locate} />
+        <T variant="small">أو اختر مدينتك:</T>
+        <ChipRow>
+          {CITIES.map((city) => (
+            <Chip
+              key={city.id}
+              label={city.name}
+              on={me.city === city.name && !me.district}
+              onPress={() => setCity(city.id).catch((e) => notice('ما قدرنا نحفظ', errorMessage(e)))}
+            />
+          ))}
+        </ChipRow>
       </Card>
 
       <Card>

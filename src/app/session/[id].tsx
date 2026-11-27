@@ -48,7 +48,7 @@ export default function SessionDetails() {
   };
 
   const directions = () => {
-    const q = venue?.latitude != null ? `${venue.latitude},${venue.longitude}` : `${venueName} الرياض`;
+    const q = venue?.latitude != null ? `${venue.latitude},${venue.longitude}` : `${venueName} ${me.city}`;
     Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`).catch(() => {});
   };
 

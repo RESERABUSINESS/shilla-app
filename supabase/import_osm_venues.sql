@@ -1,6 +1,11 @@
 -- Imports real Riyadh venues from OpenStreetMap (data © OpenStreetMap
 -- contributors, ODbL; the app shows this attribution on the places screen).
 --
+-- Cities covered: Riyadh, Jeddah, Makkah, Madinah, Dammam/Khobar/Dhahran
+-- (bounding boxes in src/lib/cities.ts terms: one Overpass request per city,
+-- adding `nwr["natural"="beach"]["name"]` and `nwr["leisure"="beach_resort"]["name"]`
+-- for coastal cities).
+--
 -- Step 1 (run once, then wait ~1 minute): the database fetches the data.
 --   select net.http_get(
 --     url := 'https://overpass-api.de/api/interpreter?data=' || <url-encoded query below>,
@@ -18,7 +23,8 @@
 --     nwr["tourism"="viewpoint"]["name"](24.3,45.9,25.2,46.9);
 --   );out center tags;
 --
--- Step 2: run this file with :response_id set to the request id from step 1.
+-- Step 2: list the request ids from step 1 in `wanted_responses` below, then run.
+-- Each venue's city is its nearest covered city.
 -- OSM does not record whether a place serves men, women or both, so imported
 -- venues are marked unverified and ask users to confirm times with the venue.
 
@@ -32,7 +38,12 @@ select
   coalesce((el->>'lat')::float8, (el->'center'->>'lat')::float8) as lat,
   coalesce((el->>'lon')::float8, (el->'center'->>'lon')::float8) as lon
 from net._http_response r, jsonb_array_elements((r.content::jsonb)->'elements') el
-where r.id = 1;
+where r.id in (select unnest(array[1, 2, 3, 4, 5])) and r.status_code = 200;  -- wanted_responses
+
+create temporary table city_centres (name text, lat float8, lng float8) on commit drop;
+insert into city_centres values
+  ('الرياض', 24.7136, 46.6753), ('جدة', 21.5433, 39.1728), ('مكة', 21.3891, 39.8579),
+  ('المدينة', 24.5247, 39.5692), ('الدمام', 26.4207, 50.0888), ('الخبر', 26.2172, 50.1971);
 
 create temporary table osm_mapped on commit drop as
 select osm_id, name, lat, lon,
@@ -50,6 +61,7 @@ select osm_id, name, lat, lon,
     when t->>'amenity' = 'cafe' and name ~* 'محمصة|roaster|مختصة|specialty|coffee club|arabica' then array['coffee']
     when t->>'tourism' = 'viewpoint' then array['hiking', 'photography', 'camping']
     when t->>'leisure' = 'amusement_arcade' then array['gaming']
+    when t->>'natural' = 'beach' or t->>'leisure' = 'beach_resort' then array['swimming', 'running', 'photography']
   end as hobbies,
   case
     when t->>'leisure' = 'pitch' and t->>'sport' = 'padel' then 'ملعب بادل'
@@ -62,6 +74,7 @@ select osm_id, name, lat, lon,
     when t->>'amenity' = 'cafe' then 'قهوة مختصة'
     when t->>'tourism' = 'viewpoint' then 'مطل ومسار'
     when t->>'leisure' = 'amusement_arcade' then 'ألعاب وترفيه'
+    when t->>'natural' = 'beach' or t->>'leisure' = 'beach_resort' then 'شاطئ'
   end as kind,
   case
     when name ~* 'نسائي|النسائي|ladies|سيدات' then 'f'
@@ -69,7 +82,8 @@ select osm_id, name, lat, lon,
     when t->>'leisure' = 'pitch' and t->>'sport' = 'soccer' then 'm'
     else 'both'
   end::public.venue_audience as audience,
-  (t->>'leisure' = 'park' or t->>'amenity' = 'library' or t->>'tourism' = 'viewpoint') as is_public
+  (t->>'leisure' = 'park' or t->>'amenity' = 'library' or t->>'tourism' = 'viewpoint' or t->>'natural' = 'beach') as is_public,
+  (select c.name from city_centres c order by (c.lat - osm_raw.lat) ^ 2 + (c.lng - osm_raw.lon) ^ 2 limit 1) as city
 from osm_raw
 where name is not null and lat is not null;
 
@@ -80,14 +94,14 @@ delete from osm_mapped a using osm_mapped b
 where a.name = b.name and a.osm_id > b.osm_id
   and abs(a.lat - b.lat) < 0.001 and abs(a.lon - b.lon) < 0.001;
 
-insert into public.venues (name, kind, location, audience, men_hours, women_hours, price_label, source, osm_id, verified)
-select name, kind, extensions.st_makepoint(lon, lat)::extensions.geography, audience,
+insert into public.venues (name, kind, city, location, audience, men_hours, women_hours, price_label, source, osm_id, verified)
+select name, kind, city, extensions.st_makepoint(lon, lat)::extensions.geography, audience,
   case when audience = 'both' then (case when is_public then 'مفتوح للجميع' else 'تأكد من أوقات الرجال مع المكان' end) end,
   case when audience = 'both' then (case when is_public then 'مفتوح للعائلات والجميع' else 'تأكد من أوقات النساء مع المكان' end) end,
   case when is_public then 'مجاني' else '' end,
   'osm', osm_id, false
 from osm_mapped
-on conflict (osm_id) do update set name = excluded.name, kind = excluded.kind, location = excluded.location;
+on conflict (osm_id) do update set name = excluded.name, kind = excluded.kind, city = excluded.city, location = excluded.location;
 
 insert into public.venue_hobbies (venue_id, hobby_id)
 select v.id, unnest(m.hobbies) from osm_mapped m join public.venues v on v.osm_id = m.osm_id

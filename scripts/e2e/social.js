@@ -5,7 +5,7 @@ const mk=async(n)=>{const c=await b.newContext({viewport:{width:390,height:844},
 const step=async(n,f)=>{try{await f();console.log('OK',n)}catch(e){console.log('FAIL',n,e.message.split('\n')[0]);throw e}};
 const signup=async(p,name,g,hob='بادل')=>{await p.goto(URL);await p.getByText('أنشئ حساب',{exact:true}).click();
  await p.getByPlaceholder('اسمك').fill(name);await p.getByPlaceholder('name@example.com').fill(`qa-${g}-${R}-${Math.random().toString(36).slice(2,6)}@mailinator.com`);await p.getByPlaceholder('٦ أحرف أو أكثر').fill('Shilla2026!');
- await p.getByText(g==='f'?'بنت':'شاب',{exact:true}).click();await p.getByText('التالي: اختر هواياتك').click();
+ await p.getByText(g==='f'?'بنت':'شاب',{exact:true}).click();await p.getByText('الرياض',{exact:true}).click();await p.getByText('التالي: اختر هواياتك').click();
  await p.getByText(hob,{exact:true}).click();await p.getByText(/يلا نبدأ/).click();await p.getByText('قريب منك هالأسبوع').waitFor({timeout:20000});};
 const A=await mk('A'),B=await mk('B');
 await step('A signup (running)',()=>signup(A,'فهدتست','m','جري'));

@@ -19,7 +19,7 @@ export default function Hobbies() {
     setBusy(true);
     setError(null);
     try {
-      await signUp({ firstName: draft.firstName.trim(), gender, hobbies: draft.hobbies, email: draft.email, password: draft.password });
+      await signUp({ firstName: draft.firstName.trim(), gender, hobbies: draft.hobbies, email: draft.email, password: draft.password, cityId: draft.cityId ?? 'riyadh' });
     } catch (e) {
       setError(errorMessage(e));
       setBusy(false);

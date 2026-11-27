@@ -6,7 +6,7 @@ const mk=async(n)=>{const c=await b.newContext({viewport:{width:390,height:844},
 const step=async(n,f)=>{try{await f();console.log('OK',n)}catch(e){console.log('FAIL',n,e.message.split('\n')[0]);throw e}};
 const signup=async(p,name,email,g)=>{await p.goto(URL);await p.getByText('أنشئ حساب',{exact:true}).click();
  await p.getByPlaceholder('اسمك').fill(name);await p.getByPlaceholder('name@example.com').fill(email);await p.getByPlaceholder('٦ أحرف أو أكثر').fill(PW);
- await p.getByText(g==='f'?'بنت':'شاب',{exact:true}).click();await p.getByText('التالي: اختر هواياتك').click();
+ await p.getByText(g==='f'?'بنت':'شاب',{exact:true}).click();await p.getByText('الرياض',{exact:true}).click();await p.getByText('التالي: اختر هواياتك').click();
  await p.getByText('بادل',{exact:true}).click();await p.getByText(/يلا نبدأ/).click();};
 const A=await mk('A'),F=await mk('F');
 await step('signup',async()=>{await signup(A,'فهدتست',EM,'m');await A.getByText('قريب منك هالأسبوع').waitFor({timeout:20000});});

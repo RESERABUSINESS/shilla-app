@@ -22,9 +22,10 @@ export default function Places() {
   const [limit, setLimit] = useState(PAGE);
   const [center, setCenter] = useState<LatLng>(DEFAULT_LOCATION);
 
+  // Venues load from the saved location, so re-read it whenever they change.
   useEffect(() => {
     savedLocation().then(setCenter).catch(() => {});
-  }, []);
+  }, [venues]);
 
   const matching = venues.filter((v) => v.hobbies.some((h) => matchesFilter(h, filter, me.hobbies)));
   const ordered = selected ? [...matching].sort((a, b) => (a.id === selected ? -1 : b.id === selected ? 1 : 0)) : matching;
@@ -64,7 +65,7 @@ export default function Places() {
 function VenueCard({ venue: v, selected }: { venue: Venue; selected: boolean }) {
   const me = useProfile();
   const directions = () => {
-    const q = v.latitude != null ? `${v.latitude},${v.longitude}` : `${v.name} الرياض`;
+    const q = v.latitude != null ? `${v.latitude},${v.longitude}` : `${v.name} ${me.city}`;
     Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`).catch(() => {});
   };
   return (

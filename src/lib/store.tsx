@@ -55,6 +55,10 @@ type Store = {
   saveName: (firstName: string) => Promise<void>;
   setNotifyPrefs: (p: NotifyPrefs) => Promise<void>;
   suggestVenue: (s: remote.SuggestInput) => Promise<void>;
+  /** Reads the device location (asking if needed). Returns false if unavailable. */
+  updateLocation: () => Promise<boolean>;
+  /** Sets the location to a city's centre, for people who do not share location. */
+  setCity: (cityId: string) => Promise<void>;
   deleteAccount: () => Promise<void>;
   signOut: () => Promise<void>;
   /** Sample mode only: append a chat message locally. */
@@ -152,6 +156,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   }, [online, signedInId, signedInGender]);
 
+  // Keep the location current: if location is already allowed, update it quietly
+  // on launch, then reload nearby venues, sessions and people.
+  useEffect(() => {
+    if (!online || !signedInId || !signedInGender) return;
+    let alive = true;
+    remote
+      .devicePlace(false)
+      .then(async (place) => {
+        if (!place || !alive) return;
+        const before = await remote.savedLocation();
+        const movedKm = Math.hypot(place.loc.lat - before.lat, place.loc.lng - before.lng) * 111;
+        if (movedKm < 1) return;
+        await remote.savePlace(signedInId, place);
+        if (!alive) return;
+        setProfile((p) => (p ? { ...p, city: place.city || p.city, district: place.district } : p));
+        const [s, v, m] = await Promise.all([remote.loadSessions(), remote.loadVenues(), remote.loadMatches(signedInGender)]);
+        if (!alive) return;
+        setRemoteSessions(s);
+        setRemoteVenues(v);
+        setRemoteMatches(m);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [online, signedInId, signedInGender]);
+
   // Register this device for push notifications once signed in.
   const wantsPush = profile?.notify?.push;
   useEffect(() => {
@@ -184,11 +215,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const updateSample = (id: string, fn: (s: Session) => Session) =>
       setSampleSessions((list) => list.map((s) => (s.id === id ? fn(s) : s)));
 
+    // Only sessions at nearby venues, plus any the user is part of.
+    const nearbyVenueIds = new Set(remoteVenues.map((v) => v.id));
+    const nearbySessions = remoteSessions.filter(
+      (s) => nearbyVenueIds.has(s.venueId) || s.hostId === profile?.id || s.members.some((m) => m.id === profile?.id),
+    );
+
     return {
       ready,
       online,
       profile,
-      sessions: online ? remoteSessions : sample.sessions,
+      sessions: online ? nearbySessions : sample.sessions,
       venues: online ? remoteVenues : sample.venues,
       matches: online ? remoteMatches : sample.matches,
       refreshing,
@@ -205,8 +242,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           id: `local-${Date.now()}`,
           firstName: input.firstName,
           gender: input.gender,
-          city: 'الرياض',
-          district: 'الملقا',
+          city: remote.cityPlace(input.cityId).city,
+          district: '',
           hobbies: input.hobbies,
           privacy: { hidePhoto: input.gender === 'f', firstNameOnly: input.gender === 'f' },
           notify: DEFAULT_NOTIFY,
@@ -350,6 +387,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (!online) throw new Error('Suggesting a place needs the server');
         await remote.suggestVenue(input);
         await refresh();
+      },
+
+      updateLocation: async () => {
+        if (!profile) return false;
+        const place = await remote.devicePlace(true);
+        if (!place) return false;
+        if (online) {
+          await remote.savePlace(profile.id, place);
+          setProfile({ ...profile, city: place.city || profile.city, district: place.district });
+          await refresh();
+        } else persistLocal({ ...profile, city: place.city || profile.city, district: place.district });
+        return true;
+      },
+
+      setCity: async (cityId) => {
+        if (!profile) return;
+        const place = remote.cityPlace(cityId);
+        if (online) {
+          await remote.savePlace(profile.id, place);
+          setProfile({ ...profile, city: place.city, district: '' });
+          await refresh();
+        } else persistLocal({ ...profile, city: place.city, district: '' });
       },
 
       deleteAccount: async () => {

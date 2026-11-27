@@ -10,7 +10,11 @@ node scripts/e2e/serve.js /tmp/shilla-web &      # serves on :8097
 node scripts/e2e/auth.js
 node scripts/e2e/multi.js
 node scripts/e2e/social.js
+node scripts/e2e/location.js
 ```
+
+If `playwright` is installed globally rather than in the project, prefix each
+command with `NODE_PATH=$(npm root -g)`.
 
 They create real accounts with `qa-…@mailinator.com` emails. Delete them after
 each run (some tests look for names that earlier runs also used):

@@ -2,7 +2,8 @@ import { router } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
 import { useOnboarding } from '@/components/onboarding';
-import { Button, Field, isValidEmail, Row, Screen, T } from '@/components/ui';
+import { Button, Chip, ChipRow, Field, isValidEmail, Row, Screen, T } from '@/components/ui';
+import { CITIES } from '@/lib/cities';
 import { useColors } from '@/lib/theme';
 import type { Gender } from '@/lib/types';
 
@@ -14,7 +15,7 @@ export default function CreateAccount() {
   const nameOk = draft.firstName.trim().length >= 2;
   const emailOk = isValidEmail(draft.email);
   const passwordOk = draft.password.length >= 6;
-  const canContinue = nameOk && emailOk && passwordOk && draft.gender !== null;
+  const canContinue = nameOk && emailOk && passwordOk && draft.gender !== null && draft.cityId !== null;
 
   return (
     <Screen footer={<Button label="التالي: اختر هواياتك" disabled={!canContinue} onPress={() => router.push('/hobbies')} />}>
@@ -50,6 +51,14 @@ export default function CreateAccount() {
         <GenderOption value="f" title="بنت" hint="تشوفين البنات فقط" selected={draft.gender === 'f'} onPress={() => update({ gender: 'f' })} />
       </Row>
       <T variant="small">الجنس ما يتغير بعد التسجيل، وعلى أساسه تشوف التطبيق.</T>
+
+      <T style={{ fontWeight: '700' }}>مدينتك</T>
+      <ChipRow>
+        {CITIES.map((c) => (
+          <Chip key={c.id} label={c.name} on={draft.cityId === c.id} onPress={() => update({ cityId: c.id })} />
+        ))}
+      </ChipRow>
+      <T variant="small">إذا سمحت بالموقع، ناخذ حيّك بالضبط ونعرض لك الأقرب. وإذا لا، نستخدم مدينتك.</T>
 
       <Pressable accessibilityRole="link" onPress={() => router.replace('/login')} style={{ paddingVertical: 8 }}>
         <T style={{ textAlign: 'center', fontWeight: '700' }}>عندك حساب؟ سجّل دخول</T>

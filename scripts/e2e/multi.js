@@ -8,7 +8,7 @@ const step=async(n,f)=>{try{await f();console.log('OK',n)}catch(e){console.log('
 const R=Date.now().toString(36);
 const signup=async(p,name,g)=>{await p.goto(URL);await p.getByText('أنشئ حساب',{exact:true}).click();
  await p.getByPlaceholder('اسمك').fill(name);await p.getByPlaceholder('name@example.com').fill(`qa-${name.length}-${g}-${R}-${Math.random().toString(36).slice(2,6)}@mailinator.com`);await p.getByPlaceholder('٦ أحرف أو أكثر').fill('Shilla2026!');
- await p.getByText(g==='f'?'بنت':'شاب',{exact:true}).click();await p.getByText('التالي: اختر هواياتك').click();
+ await p.getByText(g==='f'?'بنت':'شاب',{exact:true}).click();await p.getByText('الرياض',{exact:true}).click();await p.getByText('التالي: اختر هواياتك').click();
  await p.getByText('بادل',{exact:true}).click();await p.getByText(/يلا نبدأ/).click();
  await p.getByText('قريب منك هالأسبوع').waitFor({timeout:20000});};
 const A=await mk('A'),B=await mk('B'),C=await mk('C');

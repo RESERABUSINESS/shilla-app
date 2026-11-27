@@ -231,3 +231,12 @@ do $$ begin
 exception when others then if sqlerrm like 'SHOULD FAIL%' then raise; end if;
 end $$;
 reset role;
+
+-- my_location returns only the caller's own location.
+set role authenticated;
+set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000f1';
+do $$ begin
+  assert (select count(*) from public.my_location()) = 1, 'own location is returned';
+  assert (select round(lat::numeric, 2) from public.my_location()) = 24.80, 'it is f1''s location';
+end $$;
+reset role;

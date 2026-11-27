@@ -4,14 +4,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 
+import { CITIES, cityById, nearestCity } from './cities';
 import { formatDuration, formatStartsAt } from './format';
 import { hobby } from './hobbies';
 import { supabase } from './supabase';
 import type { AppNotification, ChatMessage, Gender, HobbyLevels, NotifyPrefs, Person, Profile, Session, Venue, VenueAudience } from './types';
 
 const LOCATION_KEY = 'shilla.location.v1';
-/** Al Malqa, Riyadh: used when the user does not share their location. */
-export const DEFAULT_LOCATION = { lat: 24.807, lng: 46.615 };
+/** Central Riyadh: used only before the user has any saved location. */
+export const DEFAULT_LOCATION = { lat: 24.7136, lng: 46.6753 };
 const NEARBY_RADIUS_KM = 60;
 
 export type LatLng = { lat: number; lng: number };
@@ -47,18 +48,39 @@ export function errorMessage(e: unknown): string {
 // Location
 // ---------------------------------------------------------------------------
 
-/** Asks for the device location once; falls back to the default district. */
-export async function resolveLocation(): Promise<LatLng> {
+/** A place on the map with the names people use for it. */
+export type Place = { loc: LatLng; city: string; district: string };
+
+/**
+ * Reads the device location and names its city and district. Asks for
+ * permission only when `ask` is true; returns null when location is unavailable.
+ */
+export async function devicePlace(ask: boolean): Promise<Place | null> {
   try {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status === 'granted') {
-      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      return { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    const perm = ask ? await Location.requestForegroundPermissionsAsync() : await Location.getForegroundPermissionsAsync();
+    if (perm.status !== 'granted') return null;
+    const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    let city = nearestCity(loc)?.name ?? '';
+    let district = '';
+    try {
+      const [r] = await Location.reverseGeocodeAsync({ latitude: loc.lat, longitude: loc.lng });
+      if (r) {
+        city = r.city || city || r.region || '';
+        district = r.district || r.subregion || '';
+      }
+    } catch {
+      // Reverse geocoding is not available everywhere (for example on the web).
     }
+    return { loc, city, district };
   } catch {
-    // Permission dialogs can fail on web or simulators; use the default.
+    return null;
   }
-  return DEFAULT_LOCATION;
+}
+
+/** Device location if allowed, otherwise the last saved one. */
+export async function resolveLocation(): Promise<LatLng> {
+  return (await devicePlace(true))?.loc ?? (await savedLocation());
 }
 
 export async function savedLocation(): Promise<LatLng> {
@@ -67,6 +89,34 @@ export async function savedLocation(): Promise<LatLng> {
     if (raw) return JSON.parse(raw) as LatLng;
   } catch {}
   return DEFAULT_LOCATION;
+}
+
+/** The location saved on the server (works on a fresh install), cached locally. */
+export async function myLocation(): Promise<LatLng> {
+  const { data, error } = await db().rpc('my_location');
+  const row = !error && Array.isArray(data) ? (data[0] as LatLng | undefined) : undefined;
+  if (row) {
+    await AsyncStorage.setItem(LOCATION_KEY, JSON.stringify(row)).catch(() => {});
+    return row;
+  }
+  return savedLocation();
+}
+
+/** Stores the user's location privately and their city and district on the profile. */
+export async function savePlace(userId: string, place: Place) {
+  await AsyncStorage.setItem(LOCATION_KEY, JSON.stringify(place.loc)).catch(() => {});
+  const { error: lErr } = await db()
+    .from('user_locations')
+    .upsert({ user_id: userId, location: toPoint(place.loc), updated_at: new Date().toISOString() });
+  if (lErr) throw lErr;
+  const { error } = await db().from('profiles').update({ city: place.city, district: place.district || null }).eq('id', userId);
+  if (error) throw error;
+}
+
+/** The place for a city picked by hand (its centre). */
+export function cityPlace(cityId: string): Place {
+  const c = cityById(cityId) ?? CITIES[0];
+  return { loc: { lat: c.lat, lng: c.lng }, city: c.name, district: '' };
 }
 
 const toPoint = ({ lat, lng }: LatLng) => `SRID=4326;POINT(${lng} ${lat})`;
@@ -118,7 +168,15 @@ export async function loadProfile(): Promise<Profile | null> {
   return data ? toProfile(data as ProfileRow) : null;
 }
 
-export type SignupInput = { firstName: string; gender: Gender; hobbies: HobbyLevels; email: string; password: string };
+export type SignupInput = {
+  firstName: string;
+  gender: Gender;
+  hobbies: HobbyLevels;
+  email: string;
+  password: string;
+  /** Used when the device location is not shared. */
+  cityId: string;
+};
 
 /** True when the signed-in account has no email yet (created before accounts existed). */
 export async function isAnonymousAccount(): Promise<boolean> {
@@ -140,11 +198,13 @@ export async function signUp(input: SignupInput): Promise<Profile> {
     userId = data.user!.id;
   }
 
+  const place = (await devicePlace(true)) ?? cityPlace(input.cityId);
   const { error: pErr } = await db().from('profiles').insert({
     id: userId,
     first_name: input.firstName,
     gender: input.gender,
-    district: 'الملقا',
+    city: place.city || cityPlace(input.cityId).city,
+    district: place.district || null,
     hide_photo: input.gender === 'f',
     first_name_only: input.gender === 'f',
   });
@@ -152,10 +212,7 @@ export async function signUp(input: SignupInput): Promise<Profile> {
 
   await saveHobbies(userId, input.hobbies);
 
-  const loc = await resolveLocation();
-  await AsyncStorage.setItem(LOCATION_KEY, JSON.stringify(loc)).catch(() => {});
-  const { error: lErr } = await db().from('user_locations').upsert({ user_id: userId, location: toPoint(loc), updated_at: new Date().toISOString() });
-  if (lErr) throw lErr;
+  await savePlace(userId, { ...place, city: place.city || cityPlace(input.cityId).city });
 
   const profile = await loadProfile();
   if (!profile) throw new Error('Profile was not created');
@@ -243,7 +300,7 @@ type VenueRow = {
 };
 
 export async function loadVenues(): Promise<Venue[]> {
-  const loc = await savedLocation();
+  const loc = await myLocation();
   const { data, error } = await db().rpc('nearby_venues', { lat: loc.lat, lng: loc.lng, radius_km: NEARBY_RADIUS_KM });
   if (error) throw error;
   return (data as VenueRow[]).map((v) => ({

@@ -3,7 +3,9 @@
 A mobile app that connects people who share a hobby (padel, running,
 pottery, reading, coffee, hiking...). Users pick their hobbies, see nearby venues,
 find people with the same interests, and join or create sessions. Studios and
-academies can post paid workshops. Launch market: Riyadh, Saudi Arabia.
+academies can post paid workshops. Market: Saudi Arabia (Riyadh, Jeddah, Makkah,
+Madinah, Dammam, Khobar; see `src/lib/cities.ts`). Never hard-code a city:
+use the profile's city or the user's location.
 
 - Product spec: [docs/PRD.md](docs/PRD.md)
 - Phases and what is next: [docs/ROADMAP.md](docs/ROADMAP.md)
