@@ -19,8 +19,12 @@ module.exports = ({ config }) => {
     throw new Error(`SHILLA_EMBED_FONTS=1 but the Thmanyah font files are missing from ${FONT_DIR}`);
   }
   const embed = wanted && present;
+  // Store builds (EAS Build) use the app version as the update runtime; Expo Go
+  // previews keep the SDK runtime so they can load preview updates.
+  const runtimeVersion = process.env.EAS_BUILD === 'true' || wanted ? { policy: 'appVersion' } : config.runtimeVersion;
   return {
     ...config,
+    runtimeVersion,
     plugins: [...(config.plugins ?? []), ...(embed ? [['expo-font', { fonts: files }]] : [])],
     extra: { ...config.extra, thmanyahFont: embed },
   };
