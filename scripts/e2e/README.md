@@ -12,6 +12,19 @@ node scripts/e2e/multi.js
 node scripts/e2e/social.js
 node scripts/e2e/location.js
 node scripts/e2e/safety.js
+node scripts/e2e/booking1.js   # then approve the claim (below)
+node scripts/e2e/booking2.js
+```
+
+Between the two booking parts, approve the test owner's claim, and afterwards
+restore the venue (it is a real place):
+
+```sql
+update public.venue_claims set status = 'approved'
+where user_id in (select id from auth.users where email like 'qa-bk-o-%@mailinator.com');
+-- after booking2.js, with the venue id it printed:
+delete from public.venue_slots where venue_id = '<venue id>';
+update public.venues set owner_id = null, verified = false, source = 'osm' where id = '<venue id>';
 ```
 
 If `playwright` is installed globally rather than in the project, prefix each

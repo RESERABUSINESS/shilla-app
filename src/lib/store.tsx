@@ -70,6 +70,11 @@ type Store = {
   block: (personId: string) => Promise<void>;
   unblock: (personId: string) => Promise<void>;
   report: (personId: string, reason: string, sessionId?: string) => Promise<void>;
+  /** Venues this user manages as a partner (empty for most people). */
+  ownedVenues: remote.OwnedVenue[];
+  loadOwnedVenues: () => Promise<void>;
+  setPaid: (sessionId: string, userId: string, paid: boolean) => Promise<void>;
+  saveBookingDetails: (sessionId: string, d: { status: 'none' | 'booked'; totalPriceSar: number | null; note: string }) => Promise<void>;
   signOut: () => Promise<void>;
   /** Sample mode only: append a chat message locally. */
   addSampleMessage: (sessionId: string, text: string) => void;
@@ -100,6 +105,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [mySessions, setMySessions] = useState<Session[]>([]);
   const [ratedIds, setRatedIds] = useState<string[]>([]);
   const [blocked, setBlocked] = useState<BlockedPerson[]>([]);
+  const [ownedVenues, setOwnedVenues] = useState<remote.OwnedVenue[]>([]);
   const signedInGender = profile?.gender;
 
   const load = useCallback(async () => {
@@ -213,6 +219,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const [list, rated] = await Promise.all([remote.loadMySessions(signedInId), remote.loadRatedSessionIds()]);
     setMySessions(list);
     setRatedIds(rated);
+  }, [online, signedInId]);
+
+  const loadOwnedVenues = useCallback(async () => {
+    if (online && signedInId) setOwnedVenues(await remote.loadOwnedVenues(signedInId));
+  }, [online, signedInId]);
+
+  // Partners get the owner dashboard: find their venues once signed in.
+  useEffect(() => {
+    if (!online || !signedInId) return;
+    let alive = true;
+    remote
+      .loadOwnedVenues(signedInId)
+      .then((v) => alive && setOwnedVenues(v))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
   }, [online, signedInId]);
 
   const loadBlocked = useCallback(async () => {
@@ -472,6 +495,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await remote.reportUser(profile.id, personId, reason, sessionId);
       },
 
+      ownedVenues,
+      loadOwnedVenues,
+
+      setPaid: async (sessionId, userId, paid) => {
+        if (!online) return;
+        await remote.setPaid(sessionId, userId, paid);
+        await refresh();
+      },
+
+      saveBookingDetails: async (sessionId, d) => {
+        if (!online) return;
+        await remote.saveBookingDetails(sessionId, d);
+        await refresh();
+      },
+
       deleteAccount: async () => {
         if (online) await remote.deleteAccount();
         notify.cancelAllReminders();
@@ -503,7 +541,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }));
       },
     };
-  }, [ready, online, profile, refreshing, refresh, anonymous, remoteSessions, remoteVenues, remoteMatches, sampleSessions, notifications, mySessions, ratedIds, blocked, loadMySessions, loadBlocked, persistLocal]);
+  }, [ready, online, profile, refreshing, refresh, anonymous, remoteSessions, remoteVenues, remoteMatches, sampleSessions, notifications, mySessions, ratedIds, blocked, ownedVenues, loadMySessions, loadBlocked, loadOwnedVenues, persistLocal]);
 
   return <Ctx.Provider value={store}>{children}</Ctx.Provider>;
 }

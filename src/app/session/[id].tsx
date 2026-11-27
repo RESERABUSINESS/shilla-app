@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, Share, View } from 'react-native';
 
+import { BookingCard } from '@/components/BookingCard';
 import { Icon } from '@/components/Icon';
 import { Avatar, Button, Card, Empty, Progress, Row, Screen, T, Tag, useTheme } from '@/components/ui';
 import { confirmAction, notice } from '@/lib/confirm';
@@ -98,6 +99,8 @@ export default function SessionDetails() {
         <Button kind="secondary" label="الاتجاهات" onPress={directions} />
       </Card>
 
+      {isMember ? <BookingCard session={s} venue={venue} /> : null}
+
       <Card>
         <Row style={{ justifyContent: 'space-between' }}>
           <T style={{ fontWeight: '700' }}>المنضمين</T>
@@ -112,6 +115,7 @@ export default function SessionDetails() {
           <Row key={m.id} style={{ gap: 10 }}>
             <Avatar name={m.name} size={34} />
             <T style={{ flex: 1 }}>{m.id === me.id ? `${m.name} (أنت)` : m.name}</T>
+            {s.totalPriceSar && m.paid ? <Tag tone="highlight" label="دفع ✓" /> : null}
             {m.id === s.hostId ? <Tag tone="accent" label={isWorkshop ? 'المقدم' : 'المنظم'} /> : null}
             {m.id !== me.id && online ? (
               <Pressable

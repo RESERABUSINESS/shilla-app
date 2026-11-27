@@ -11,7 +11,7 @@ import { useApp, useProfile } from '@/lib/store';
 export default function Profile() {
   const c = useTheme();
   const me = useProfile();
-  const { signOut, online, anonymous, unread, sessions } = useApp();
+  const { signOut, online, anonymous, unread, sessions, ownedVenues } = useApp();
   const f = me.gender === 'f';
   const mySessions = sessions.filter((s) => s.hostId === me.id || s.members.some((m) => m.id === me.id));
 
@@ -44,6 +44,7 @@ export default function Profile() {
       ) : null}
 
       <Card style={{ gap: 0, paddingVertical: 4 }}>
+        {ownedVenues.length ? <MenuRow icon="business-outline" label="لوحة مكاني" href="/owner" /> : null}
         <MenuRow icon="notifications-outline" label="الإشعارات" badge={unread} href="/notifications" />
         <MenuRow icon="calendar-outline" label={`جلساتي (${num(mySessions.length)})`} href="/my-sessions" />
         <MenuRow icon="heart-outline" label="تعديل هواياتي" href="/edit-hobbies" />

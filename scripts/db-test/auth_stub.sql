@@ -21,3 +21,8 @@ create schema if not exists net;
 create table if not exists net._calls (url text, body jsonb, at timestamptz default now());
 create or replace function net.http_post(url text, body jsonb, headers jsonb default '{}'::jsonb)
 returns bigint language sql as $$ insert into net._calls (url, body) values (url, body) returning 1::bigint $$;
+-- Like Supabase: tables created later are granted to these roles by default,
+-- so a migration's own revoke/grant (column grants) is what tests see.
+alter default privileges in schema public grant select, insert, update, delete on tables to authenticated;
+alter default privileges in schema public grant select on tables to anon;
+alter default privileges in schema public grant usage on sequences to authenticated;

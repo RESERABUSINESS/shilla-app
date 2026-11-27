@@ -8,7 +8,7 @@ import { CITIES, cityById, nearestCity } from './cities';
 import { formatDuration, formatStartsAt } from './format';
 import { hobby } from './hobbies';
 import { supabase } from './supabase';
-import type { AppNotification, BlockedPerson, ChatMessage, Gender, HobbyLevels, NotifyPrefs, Person, Profile, Session, Venue, VenueAudience } from './types';
+import type { AppNotification, BlockedPerson, BookingStatus, ChatMessage, Slot, VenueBooking, Gender, HobbyLevels, NotifyPrefs, Person, Profile, Session, Venue, VenueAudience } from './types';
 
 const LOCATION_KEY = 'shilla.location.v1';
 /** Central Riyadh: used only before the user has any saved location. */
@@ -27,6 +27,12 @@ export function errorMessage(e: unknown): string {
   const msg = e instanceof Error ? e.message : typeof e === 'object' && e && 'message' in e ? String((e as { message: unknown }).message) : String(e);
   if (msg.includes('session is full')) return 'الجلسة اكتملت.';
   if (msg.includes('already a member')) return 'هالشخص منضم للجلسة من قبل.';
+  if (msg.includes('slot is not available')) return 'هالوقت انحجز أو ما عاد متاح. اختر وقت ثاني.';
+  if (msg.includes('session already has a booking')) return 'الجلسة عندها حجز من قبل.';
+  if (msg.includes('only the host can book')) return 'منظم الجلسة بس يقدر يحجز.';
+  if (msg.includes('booking already answered')) return 'تم الرد على هالطلب من قبل.';
+  if (msg.includes('venue does not serve this gender')) return 'المكان ما يخدم هالفئة.';
+  if (msg.includes('venue_claims') && msg.includes('duplicate')) return 'قدمت طلب لهالمكان من قبل.';
   if (msg.includes('only participants can invite')) return 'لازم تكون منضم للجلسة عشان تدعو أحد.';
   if (msg.includes('duplicate key') && msg.includes('invites')) return 'دعيته لهالجلسة من قبل.';
   if (msg.includes('invalid suggestion')) return 'اكتب اسم المكان واختر هواية وحدة على الأقل.';
@@ -297,6 +303,10 @@ type VenueRow = {
   longitude: number;
   verified: boolean;
   source: Venue['source'];
+  phone: string | null;
+  website: string | null;
+  is_partner: boolean;
+  rating_count: number;
 };
 
 export async function loadVenues(): Promise<Venue[]> {
@@ -319,6 +329,10 @@ export async function loadVenues(): Promise<Venue[]> {
     longitude: v.longitude,
     verified: v.verified,
     source: v.source,
+    phone: v.phone ?? undefined,
+    website: v.website ?? undefined,
+    isPartner: v.is_partner,
+    ratingCount: v.rating_count,
   }));
 }
 
@@ -345,6 +359,9 @@ type SessionRow = {
   id: string;
   kind: 'meetup' | 'workshop';
   status: Session['status'];
+  booking_status: BookingStatus;
+  booking_note: string | null;
+  total_price_sar: number | null;
   gender: Gender;
   hobby_id: string;
   venue_id: string;
@@ -356,13 +373,13 @@ type SessionRow = {
   price_sar: number | null;
   venue: { name: string; audience: VenueAudience } | null;
   host: { first_name: string } | null;
-  session_members: { user_id: string; profile: { first_name: string } | null }[];
+  session_members: { user_id: string; paid_at: string | null; profile: { first_name: string } | null }[];
 };
 
 const SESSION_SELECT =
-  'id, kind, status, gender, hobby_id, venue_id, host_id, starts_at, duration_minutes, level, capacity, price_sar, ' +
+  'id, kind, status, booking_status, booking_note, total_price_sar, gender, hobby_id, venue_id, host_id, starts_at, duration_minutes, level, capacity, price_sar, ' +
   'venue:venues(name, audience), host:profiles!sessions_host_id_fkey(first_name), ' +
-  'session_members(user_id, profile:profiles(first_name))';
+  'session_members(user_id, paid_at, profile:profiles(first_name))';
 
 function toSession(r: SessionRow): Session {
   const womenSlot = r.venue?.audience === 'both' && r.gender === 'f' ? ' · فترة نسائية' : '';
@@ -380,7 +397,10 @@ function toSession(r: SessionRow): Session {
     hostId: r.host_id,
     hostName: r.host?.first_name ?? '',
     capacity: r.capacity,
-    members: r.session_members.map((m) => ({ id: m.user_id, name: m.profile?.first_name ?? '' })),
+    members: r.session_members.map((m) => ({ id: m.user_id, name: m.profile?.first_name ?? '', paid: m.paid_at !== null })),
+    bookingStatus: r.booking_status,
+    bookingNote: r.booking_note ?? undefined,
+    totalPriceSar: r.total_price_sar != null ? Number(r.total_price_sar) : undefined,
     priceSar: r.price_sar ?? undefined,
     durationLabel: r.duration_minutes ? formatDuration(r.duration_minutes) : undefined,
     messages: [],
@@ -620,5 +640,187 @@ export async function reportUser(reporterId: string, reportedId: string, reason:
   const { error } = await db()
     .from('reports')
     .insert({ reporter_id: reporterId, reported_user_id: reportedId, reason, session_id: sessionId ?? null });
+  if (error) throw error;
+}
+
+// ---------------------------------------------------------------------------
+// Bookings: organising (phase 1) and partner venues (phase 2)
+// ---------------------------------------------------------------------------
+
+/** Host only: booking status, total price and a note for the session. */
+export async function saveBookingDetails(sessionId: string, d: { status: 'none' | 'booked'; totalPriceSar: number | null; note: string }) {
+  const { error } = await db()
+    .from('sessions')
+    .update({ booking_status: d.status, total_price_sar: d.totalPriceSar, booking_note: d.note.trim() || null })
+    .eq('id', sessionId);
+  if (error) throw error;
+}
+
+export async function setPaid(sessionId: string, userId: string, paid: boolean) {
+  const { error } = await db()
+    .from('session_members')
+    .update({ paid_at: paid ? new Date().toISOString() : null })
+    .eq('session_id', sessionId)
+    .eq('user_id', userId);
+  if (error) throw error;
+}
+
+type SlotRow = {
+  id: string;
+  venue_id: string;
+  hobby_id: string;
+  audience: Gender;
+  starts_at: string;
+  duration_minutes: number;
+  price_sar: number;
+  status: Slot['status'];
+};
+
+const toSlot = (r: SlotRow): Slot => ({
+  id: r.id,
+  venueId: r.venue_id,
+  hobbyId: r.hobby_id,
+  audience: r.audience,
+  startsAt: r.starts_at,
+  durationMinutes: r.duration_minutes,
+  priceSar: Number(r.price_sar),
+  status: r.status,
+});
+
+const SLOT_COLUMNS = 'id, venue_id, hobby_id, audience, starts_at, duration_minutes, price_sar, status';
+
+/** Open future slots at a venue that the caller can book (RLS limits them to the caller's side). */
+export async function loadOpenSlots(venueId: string, hobbyId?: string): Promise<Slot[]> {
+  let q = db().from('venue_slots').select(SLOT_COLUMNS).eq('venue_id', venueId).eq('status', 'open').gt('starts_at', new Date().toISOString());
+  if (hobbyId) q = q.eq('hobby_id', hobbyId);
+  const { data, error } = await q.order('starts_at').limit(60);
+  if (error) throw error;
+  return (data as SlotRow[]).map(toSlot);
+}
+
+export async function requestBooking(slotId: string, sessionId: string): Promise<string> {
+  const { data, error } = await db().rpc('request_booking', { p_slot: slotId, p_session: sessionId });
+  if (error) throw error;
+  return data as string;
+}
+
+/** The host's active booking request for a session, if any. */
+export async function loadActiveBooking(sessionId: string): Promise<VenueBooking | null> {
+  const { data, error } = await db()
+    .from('venue_bookings')
+    .select(`id, slot_id, venue_id, session_id, party_size, code, status, slot:venue_slots(${SLOT_COLUMNS})`)
+    .eq('session_id', sessionId)
+    .in('status', ['pending', 'confirmed'])
+    .maybeSingle();
+  if (error) throw error;
+  return data ? toBooking(data as unknown as BookingRow) : null;
+}
+
+export async function cancelBooking(bookingId: string) {
+  const { error } = await db().rpc('cancel_booking', { p_booking: bookingId });
+  if (error) throw error;
+}
+
+export async function claimVenue(userId: string, venueId: string, businessName: string, contact: string) {
+  const { error } = await db()
+    .from('venue_claims')
+    .insert({ venue_id: venueId, user_id: userId, business_name: businessName.trim(), contact: contact.trim() });
+  if (error) throw error;
+}
+
+export async function loadMyClaims(): Promise<{ venueId: string; status: string }[]> {
+  const { data, error } = await db().from('venue_claims').select('venue_id, status');
+  if (error) throw error;
+  return (data ?? []).map((c) => ({ venueId: c.venue_id as string, status: c.status as string }));
+}
+
+export type OwnedVenue = { id: string; name: string; kind: string; audience: VenueAudience; hobbies: string[] };
+
+export async function loadOwnedVenues(userId: string): Promise<OwnedVenue[]> {
+  const { data, error } = await db()
+    .from('venues')
+    .select('id, name, kind, audience, venue_hobbies(hobby_id)')
+    .eq('owner_id', userId)
+    .order('name');
+  if (error) throw error;
+  return (data as { id: string; name: string; kind: string; audience: VenueAudience; venue_hobbies: { hobby_id: string }[] }[]).map((v) => ({
+    id: v.id,
+    name: v.name,
+    kind: v.kind,
+    audience: v.audience,
+    hobbies: v.venue_hobbies.map((h) => h.hobby_id),
+  }));
+}
+
+/** Owner: every slot from today on. */
+export async function loadOwnerSlots(venueId: string): Promise<Slot[]> {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const { data, error } = await db()
+    .from('venue_slots')
+    .select(SLOT_COLUMNS)
+    .eq('venue_id', venueId)
+    .gte('starts_at', today.toISOString())
+    .order('starts_at')
+    .limit(200);
+  if (error) throw error;
+  return (data as SlotRow[]).map(toSlot);
+}
+
+export type NewSlot = { venueId: string; hobbyId: string; audience: Gender; startsAt: Date; durationMinutes: number; priceSar: number };
+
+export async function addSlot(s: NewSlot) {
+  const { error } = await db().from('venue_slots').insert({
+    venue_id: s.venueId,
+    hobby_id: s.hobbyId,
+    audience: s.audience,
+    starts_at: s.startsAt.toISOString(),
+    duration_minutes: s.durationMinutes,
+    price_sar: s.priceSar,
+  });
+  if (error) throw error;
+}
+
+export async function deleteSlot(slotId: string) {
+  const { error } = await db().from('venue_slots').delete().eq('id', slotId);
+  if (error) throw error;
+}
+
+type BookingRow = {
+  id: string;
+  slot_id: string;
+  venue_id: string;
+  session_id: string;
+  party_size: number;
+  code: string;
+  status: VenueBooking['status'];
+  slot: SlotRow | null;
+};
+
+const toBooking = (b: BookingRow): VenueBooking => ({
+  id: b.id,
+  slotId: b.slot_id,
+  venueId: b.venue_id,
+  sessionId: b.session_id,
+  partySize: b.party_size,
+  code: b.code,
+  status: b.status,
+  slot: b.slot ? toSlot(b.slot) : undefined,
+});
+
+/** Owner: bookings for a venue, newest first. */
+export async function loadOwnerBookings(venueId: string): Promise<VenueBooking[]> {
+  const { data, error } = await db()
+    .from('venue_bookings')
+    .select(`id, slot_id, venue_id, session_id, party_size, code, status, slot:venue_slots(${SLOT_COLUMNS})`)
+    .eq('venue_id', venueId)
+    .order('created_at', { ascending: false })
+    .limit(100);
+  if (error) throw error;
+  return (data as unknown as BookingRow[]).map(toBooking);
+}
+
+export async function respondBooking(bookingId: string, accept: boolean) {
+  const { error } = await db().rpc('respond_booking', { p_booking: bookingId, p_accept: accept });
   if (error) throw error;
 }

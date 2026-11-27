@@ -36,7 +36,9 @@ select
   coalesce(nullif(el->'tags'->>'name:ar', ''), el->'tags'->>'name') as name,
   el->'tags' as t,
   coalesce((el->>'lat')::float8, (el->'center'->>'lat')::float8) as lat,
-  coalesce((el->>'lon')::float8, (el->'center'->>'lon')::float8) as lon
+  coalesce((el->>'lon')::float8, (el->'center'->>'lon')::float8) as lon,
+  coalesce(el->'tags'->>'phone', el->'tags'->>'contact:phone') as phone,
+  coalesce(el->'tags'->>'website', el->'tags'->>'contact:website') as website
 from net._http_response r, jsonb_array_elements((r.content::jsonb)->'elements') el
 where r.id in (select unnest(array[1, 2, 3, 4, 5])) and r.status_code = 200;  -- wanted_responses
 
@@ -46,7 +48,7 @@ insert into city_centres values
   ('المدينة', 24.5247, 39.5692), ('الدمام', 26.4207, 50.0888), ('الخبر', 26.2172, 50.1971);
 
 create temporary table osm_mapped on commit drop as
-select osm_id, name, lat, lon,
+select osm_id, name, lat, lon, phone, website,
   case
     when t->>'leisure' = 'pitch' and t->>'sport' = 'padel' then array['padel']
     when t->>'leisure' = 'pitch' and t->>'sport' = 'tennis' and name !~ 'الطاولة' then array['tennis']
@@ -94,12 +96,12 @@ delete from osm_mapped a using osm_mapped b
 where a.name = b.name and a.osm_id > b.osm_id
   and abs(a.lat - b.lat) < 0.001 and abs(a.lon - b.lon) < 0.001;
 
-insert into public.venues (name, kind, city, location, audience, men_hours, women_hours, price_label, source, osm_id, verified)
+insert into public.venues (name, kind, city, location, audience, men_hours, women_hours, price_label, source, osm_id, verified, phone, website)
 select name, kind, city, extensions.st_makepoint(lon, lat)::extensions.geography, audience,
   case when audience = 'both' then (case when is_public then 'مفتوح للجميع' else 'تأكد من أوقات الرجال مع المكان' end) end,
   case when audience = 'both' then (case when is_public then 'مفتوح للعائلات والجميع' else 'تأكد من أوقات النساء مع المكان' end) end,
   case when is_public then 'مجاني' else '' end,
-  'osm', osm_id, false
+  'osm', osm_id, false, phone, website
 from osm_mapped
 on conflict (osm_id) do update set name = excluded.name, kind = excluded.kind, city = excluded.city, location = excluded.location;
 

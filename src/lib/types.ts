@@ -25,7 +25,7 @@ export type NotifyPrefs = { push: boolean; messages: boolean; reminders: boolean
 
 export type AppNotification = {
   id: string;
-  kind: 'joined' | 'invite' | 'cancelled';
+  kind: 'joined' | 'invite' | 'cancelled' | 'booked' | 'booking_request' | 'booking_confirmed' | 'booking_declined' | 'booking_cancelled';
   sessionId?: string;
   inviteId?: string;
   inviteStatus?: 'pending' | 'accepted' | 'declined';
@@ -54,6 +54,35 @@ export type Venue = {
   /** False for places imported from OpenStreetMap or suggested by users. */
   verified?: boolean;
   source?: 'manual' | 'osm' | 'owner' | 'user';
+  phone?: string;
+  website?: string;
+  /** Has an owner who publishes bookable slots in the app. */
+  isPartner?: boolean;
+  ratingCount?: number;
+};
+
+/** A time a partner venue can be booked. */
+export type Slot = {
+  id: string;
+  venueId: string;
+  hobbyId: string;
+  audience: Gender;
+  startsAt: string;
+  durationMinutes: number;
+  priceSar: number;
+  status: 'open' | 'held' | 'booked' | 'cancelled';
+};
+
+/** A booking as the venue owner sees it: no names, only the party size and code. */
+export type VenueBooking = {
+  id: string;
+  slotId: string;
+  venueId: string;
+  sessionId: string;
+  partySize: number;
+  code: string;
+  status: 'pending' | 'confirmed' | 'declined' | 'cancelled';
+  slot?: Slot;
 };
 
 export type SessionKind = 'meetup' | 'workshop';
@@ -61,7 +90,9 @@ export type SessionKind = 'meetup' | 'workshop';
 export type ChatMessage = { id: string; authorId: string; author: string; text: string; sentAt: string };
 
 /** A person taking part in a session. */
-export type Member = { id: string; name: string };
+export type Member = { id: string; name: string; paid?: boolean };
+
+export type BookingStatus = 'none' | 'requested' | 'booked';
 
 export type Session = {
   id: string;
@@ -74,6 +105,9 @@ export type Session = {
   /** ISO time; used for reminders. Missing in sample data. */
   startsAt?: string;
   status?: 'open' | 'cancelled' | 'done';
+  bookingStatus?: BookingStatus;
+  bookingNote?: string;
+  totalPriceSar?: number;
   level: number;
   hostId: string;
   hostName: string;

@@ -14,12 +14,25 @@ const ICON: Record<AppNotification['kind'], IconName> = {
   joined: 'person-add-outline',
   invite: 'mail-outline',
   cancelled: 'close-circle-outline',
+  booked: 'checkmark-circle-outline',
+  booking_request: 'calendar-outline',
+  booking_confirmed: 'checkmark-done-outline',
+  booking_declined: 'alert-circle-outline',
+  booking_cancelled: 'close-circle-outline',
 };
+
+/** Notifications for venue owners open the owner dashboard, not a session. */
+const OWNER_KINDS: AppNotification['kind'][] = ['booking_request', 'booking_cancelled'];
 
 function text(n: AppNotification) {
   const h = n.hobbyId ? ` · ${hobby(n.hobbyId).name}` : '';
   if (n.kind === 'joined') return `${n.actorName ?? 'أحد'} انضم لجلستك${h}`;
   if (n.kind === 'invite') return `${n.actorName ?? 'أحد'} يدعوك لجلسة${h}`;
+  if (n.kind === 'booked') return `تم حجز المكان لجلستك${h}`;
+  if (n.kind === 'booking_request') return `طلب حجز جديد لمكانك${h}`;
+  if (n.kind === 'booking_confirmed') return `المكان أكد حجزك${h}`;
+  if (n.kind === 'booking_declined') return `المكان اعتذر عن الحجز${h}. اختر وقت ثاني`;
+  if (n.kind === 'booking_cancelled') return `انلغى حجز في مكانك${h}`;
   return `انلغت جلسة كنت منضم لها${h}`;
 }
 
@@ -64,14 +77,15 @@ export default function Notifications() {
       {!online ? <T variant="muted">الإشعارات تحتاج الاتصال بالخادم.</T> : null}
       {notifications.length ? (
         notifications.map((n) => {
+          const forOwner = OWNER_KINDS.includes(n.kind);
           const sessionExists = n.sessionId && sessions.some((s) => s.id === n.sessionId);
           const pendingInvite = n.kind === 'invite' && n.inviteStatus === 'pending' && sessionExists;
           return (
             <Pressable
               key={n.id}
               accessibilityRole="button"
-              disabled={!sessionExists}
-              onPress={() => router.push(`/session/${n.sessionId}`)}>
+              disabled={!sessionExists && !forOwner}
+              onPress={() => (forOwner ? router.push('/owner') : router.push(`/session/${n.sessionId}`))}>
               <Card selected={!n.read}>
                 <Row style={{ gap: 10, alignItems: 'flex-start' }}>
                   <Icon name={ICON[n.kind]} size={22} color={c.accent} />

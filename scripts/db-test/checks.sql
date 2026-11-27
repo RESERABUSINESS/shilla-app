@@ -303,3 +303,107 @@ do $$ begin
   assert (select count(*) from public.sessions where id = '20000000-0000-0000-0000-000000000004') = 1, 'unblock restores the session';
 end $$;
 reset role;
+
+-- Bookings ---------------------------------------------------------------------
+-- a2 (a man) claims the shared padel venue; an admin approves.
+reset role;
+insert into public.venue_claims (venue_id, user_id, business_name, contact)
+values ('10000000-0000-0000-0000-000000000001', :a2, 'نادي البادل', '0500000000');
+update public.venue_claims set status = 'approved' where user_id = :a2;
+-- f2 hosts a future women's padel session there; f1 joins.
+insert into public.sessions (id, gender, hobby_id, venue_id, host_id, starts_at, capacity) values
+  ('20000000-0000-0000-0000-000000000005', 'f', 'padel', '10000000-0000-0000-0000-000000000001', :f2, now() + interval '3 days', 4);
+insert into public.session_members (session_id, user_id) values
+  ('20000000-0000-0000-0000-000000000005', :f2), ('20000000-0000-0000-0000-000000000005', :f1);
+
+set role authenticated;
+set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000a2';
+do $$ begin
+  assert (select owner_id from public.venues where id = '10000000-0000-0000-0000-000000000001') = '00000000-0000-0000-0000-0000000000a2', 'approved claim makes an owner';
+  assert (select count(*) from public.sessions where id = '20000000-0000-0000-0000-000000000005') = 0, 'owner cannot see the women''s session';
+end $$;
+insert into public.venue_slots (id, venue_id, hobby_id, audience, starts_at, duration_minutes, price_sar) values
+  ('30000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', 'padel', 'f', now() + interval '4 days', 90, 200);
+
+-- The owner of a women-only venue cannot publish men's slots.
+set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000f9';
+do $$ begin
+  insert into public.venue_slots (venue_id, hobby_id, audience, starts_at, price_sar)
+  values ('10000000-0000-0000-0000-000000000003', 'pottery', 'm', now() + interval '1 day', 100);
+  raise exception 'SHOULD FAIL: men''s slot at a women-only venue';
+exception when others then if sqlerrm like 'SHOULD FAIL%' then raise; end if;
+end $$;
+
+-- Men do not see women's slots; women do.
+set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000a1';
+do $$ begin
+  assert (select count(*) from public.venue_slots) = 0, 'men do not see women''s slots';
+end $$;
+set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000f1';
+do $$ begin
+  assert (select count(*) from public.venue_slots) = 1, 'women see the open women''s slot';
+  perform public.request_booking('30000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000005');
+  raise exception 'SHOULD FAIL: a member who is not the host booked';
+exception when others then if sqlerrm like 'SHOULD FAIL%' then raise; end if;
+end $$;
+
+-- The host requests the slot.
+set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000f2';
+select public.request_booking('30000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000005') is not null as requested;
+do $$ begin
+  assert (select booking_status from public.sessions where id = '20000000-0000-0000-0000-000000000005') = 'requested', 'session shows requested';
+end $$;
+
+-- The owner sees the booking (party size, no names) and its notification.
+set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000a2';
+do $$ begin
+  assert (select party_size from public.venue_bookings) = 2, 'owner sees the party size';
+  assert (select count(*) from public.notifications where kind = 'booking_request') = 1, 'owner is notified';
+  assert (select count(*) from public.profiles where gender = 'f') = 0, 'owner still sees no women';
+end $$;
+
+-- Someone else cannot answer it; the owner confirms.
+set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000a1';
+do $$ begin
+  perform public.respond_booking((select id from public.venue_bookings limit 1), true);
+  raise exception 'SHOULD FAIL: non-owner confirmed';
+exception when others then if sqlerrm like 'SHOULD FAIL%' then raise; end if;
+end $$;
+reset role;
+set role authenticated;
+set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000a2';
+select public.respond_booking((select id from public.venue_bookings where status = 'pending' limit 1), true);
+
+-- The session takes the slot's time and price; members are told.
+set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000f1';
+do $$ begin
+  assert (select booking_status from public.sessions where id = '20000000-0000-0000-0000-000000000005') = 'booked', 'session booked';
+  assert (select total_price_sar from public.sessions where id = '20000000-0000-0000-0000-000000000005') = 200, 'price set from slot';
+  assert (select booking_note from public.sessions where id = '20000000-0000-0000-0000-000000000005') like 'رمز الحجز: %', 'booking code noted';
+  assert (select count(*) from public.notifications where kind = 'booked') = 1, 'members are told it is booked';
+end $$;
+
+-- f1 marks her share paid; she cannot move her membership row.
+update public.session_members set paid_at = now()
+where session_id = '20000000-0000-0000-0000-000000000005' and user_id = '00000000-0000-0000-0000-0000000000f1';
+do $$ begin
+  assert (select paid_at is not null from public.session_members
+          where session_id = '20000000-0000-0000-0000-000000000005' and user_id = '00000000-0000-0000-0000-0000000000f1'), 'paid recorded';
+  update public.session_members set session_id = '20000000-0000-0000-0000-000000000001'
+  where session_id = '20000000-0000-0000-0000-000000000005' and user_id = '00000000-0000-0000-0000-0000000000f1';
+  raise exception 'SHOULD FAIL: member moved her membership';
+exception when others then if sqlerrm like 'SHOULD FAIL%' then raise; end if;
+end $$;
+
+-- The host cancels: the slot reopens and the owner hears about it.
+set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000f2';
+do $$ begin
+  assert (select count(*) from public.notifications where kind = 'booking_confirmed') = 1, 'host is told it was confirmed';
+end $$;
+select public.cancel_booking((select id from public.venue_bookings where status = 'confirmed' limit 1));
+reset role;
+do $$ begin
+  assert (select status from public.venue_slots where id = '30000000-0000-0000-0000-000000000001') = 'open', 'slot reopens';
+  assert (select booking_status from public.sessions where id = '20000000-0000-0000-0000-000000000005') = 'none', 'session unbooked';
+  assert (select count(*) from public.notifications where kind = 'booking_cancelled') = 1, 'owner hears about the cancellation';
+end $$;

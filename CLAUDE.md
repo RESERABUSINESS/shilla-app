@@ -52,6 +52,9 @@ use the profile's city or the user's location.
   OSM does not know who a venue serves; keep showing the "confirm times" note.
 - Notifications: triggers write `notifications` rows and send Expo pushes via
   `pg_net`; the app also schedules a local reminder an hour before a session.
+- Bookings: hosts record outside bookings (status, price, who paid); partner venues
+  (approved `venue_claims`) publish `venue_slots` that hosts book via RPCs. Owners
+  never see who booked (party size and code only): keep it that way.
 - Use `confirmAction` / `notice` from `src/lib/confirm.ts`, never `Alert.alert`
   directly: Alert does nothing on the web.
 
@@ -93,7 +96,8 @@ src/app/(onboarding)/   welcome, verify, hobbies (sign-up flow)
 src/app/(tabs)/         sessions, places (map + list), people, profile
 src/app/session/        new, [id] (details), chat/[id], invite/[id]
 src/app/                notifications, settings, suggest-venue, invite-person/[id], edit-hobbies,
-                        safety/[id] (report/block), blocked, my-sessions (+ ratings), terms
+                        safety/[id] (report/block), blocked, my-sessions (+ ratings), terms,
+                        session/booking/[id], book/[id], claim/[id], owner/ (partner dashboard)
 src/components/         shared UI (ui.tsx), SessionCard, HobbyPicker, HobbyFilter, VenueMap (+ .web), Icon
 src/lib/                hobbies catalog, types, store (state), remote (Supabase), notifications,
                         confirm (dialogs that also work on web), theme, format, fonts

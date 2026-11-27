@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Linking } from 'react-native';
+import { Linking, Pressable, View } from 'react-native';
 
 import { HobbyFilter, matchesFilter } from '@/components/HobbyFilter';
 import { Button, Card, Chip, ChipRow, Empty, Row, Screen, T, Tag } from '@/components/ui';
@@ -82,11 +82,27 @@ function VenueCard({ venue: v, selected }: { venue: Venue; selected: boolean }) 
           <Tag key={h} label={`${hobby(h).emoji} ${hobby(h).name}`} />
         ))}
         <Tag tone="accent" label={venueHoursFor(v, me.gender)} />
+        {v.isPartner ? <Tag tone="highlight" label="شريك · حجز من التطبيق" /> : null}
         {v.verified === false ? <Tag label={v.source === 'user' ? 'اقتراح مستخدم' : 'غير مؤكد'} /> : null}
       </Row>
+      {v.ratingCount ? <T variant="small">{`★ ${num(v.rating)} من ${num(v.ratingCount)} تقييم`}</T> : null}
       <Row>
         <Button style={{ flex: 1 }} label="أنشئ جلسة هنا" onPress={() => router.push({ pathname: '/session/new', params: { venueId: v.id } })} />
         <Button style={{ flex: 1 }} kind="secondary" label="الاتجاهات" onPress={directions} />
+      </Row>
+      <Row style={{ justifyContent: 'space-between' }}>
+        {v.phone ? (
+          <Pressable accessibilityRole="button" onPress={() => Linking.openURL(`tel:${v.phone}`).catch(() => {})}>
+            <T variant="small" style={{ fontWeight: '700' }}>اتصل بالمكان</T>
+          </Pressable>
+        ) : (
+          <View />
+        )}
+        {!v.isPartner ? (
+          <Pressable accessibilityRole="button" onPress={() => router.push(`/claim/${v.id}`)}>
+            <T variant="small">أنت صاحب المكان؟</T>
+          </Pressable>
+        ) : null}
       </Row>
     </Card>
   );

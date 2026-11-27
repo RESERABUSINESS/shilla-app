@@ -59,3 +59,14 @@ export function formatDuration(minutes: number) {
   if (h === 2) return 'ساعتين';
   return `${num(h)} ساعات`;
 }
+
+const AR_MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+
+/** "الخميس ٤ ديسمبر · ٨:٠٠ م" — for slots, which can be weeks ahead. */
+export function formatDateTime(d: Date) {
+  const [weekday, time] = formatStartsAt(d).split(' · ');
+  return `${weekday} ${num(d.getDate())} ${AR_MONTHS[d.getMonth()]} · ${time}`;
+}
+
+/** "٥٠ ر.س" with up to one decimal. */
+export const sar = (n: number) => `${num(Math.round(n * 10) / 10)} ر.س`;

@@ -45,6 +45,11 @@ function RootNavigator() {
         <Stack.Screen name="safety/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="blocked" options={{ presentation: 'modal' }} />
         <Stack.Screen name="my-sessions" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="session/booking/[id]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="book/[id]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="claim/[id]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="owner/index" />
+        <Stack.Screen name="owner/[id]" />
         <Stack.Screen name="edit-hobbies" options={{ presentation: 'modal' }} />
       </Stack.Protected>
     </Stack>
