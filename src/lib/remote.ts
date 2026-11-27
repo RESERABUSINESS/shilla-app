@@ -183,12 +183,6 @@ export async function signIn(email: string, password: string): Promise<Profile |
   return loadProfile();
 }
 
-/** Turns an anonymous account into an email account, keeping all its data. */
-export async function saveAccount(email: string, password: string) {
-  const { error } = await db().auth.updateUser({ email: email.trim(), password });
-  if (error) throw error;
-}
-
 export async function signOut() {
   await db().auth.signOut();
 }

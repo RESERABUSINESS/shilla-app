@@ -37,7 +37,6 @@ type Store = {
   signUp: (input: remote.SignupInput) => Promise<void>;
   /** Returns false when the account exists but never finished sign-up. */
   signIn: (email: string, password: string) => Promise<boolean>;
-  saveAccount: (email: string, password: string) => Promise<void>;
   setHobbies: (h: HobbyLevels) => Promise<void>;
   togglePrivacy: (key: keyof Profile['privacy']) => Promise<void>;
   toggleMembership: (sessionId: string) => Promise<void>;
@@ -243,12 +242,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setAnonymous(false);
         setProfile(p);
         return p !== null;
-      },
-
-      saveAccount: async (email, password) => {
-        if (!online) return;
-        await remote.saveAccount(email, password);
-        setAnonymous(await remote.isAnonymousAccount());
       },
 
       signOut: async () => {

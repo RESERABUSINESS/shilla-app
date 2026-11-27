@@ -16,7 +16,7 @@ export default function Profile() {
       return;
     }
     // Anonymous accounts cannot be recovered after signing out.
-    Alert.alert('تسجيل الخروج', 'حسابك ما انحفظ بإيميل. إذا طلعت، ما تقدر ترجع له. احفظه أول من «احفظ حسابك». متأكد إنك تبغى تطلع؟', [
+    Alert.alert('تسجيل الخروج', 'حسابك تجريبي وما له إيميل. إذا طلعت، ما تقدر ترجع له. متأكد؟', [
       { text: 'إلغاء', style: 'cancel' },
       { text: 'تسجيل الخروج', style: 'destructive', onPress: () => signOut().catch(() => {}) },
     ]);
@@ -36,9 +36,17 @@ export default function Profile() {
 
       {anonymous ? (
         <Card selected>
-          <T style={{ fontWeight: '700' }}>احفظ حسابك</T>
-          <T variant="muted">حسابك مرتبط بهالجوال بس. أضف إيميل وكلمة مرور عشان ما يضيع وتقدر تدخله من أي جوال.</T>
-          <Button label="احفظ حسابي" onPress={() => router.push('/save-account')} />
+          <T style={{ fontWeight: '700' }}>حسابك تجريبي</T>
+          <T variant="muted">سجّلت قبل ما نضيف الحسابات، فحسابك ما له إيميل ومرتبط بهالجوال بس. أنشئ حساب بالإيميل عشان تقدر تدخله من أي جوال.</T>
+          <Button
+            label="أنشئ حساب بالإيميل"
+            onPress={() =>
+              Alert.alert('حساب جديد', 'بنطلعك من الحساب التجريبي، وبعدها تنشئ حسابك بالإيميل. جلساتك القديمة ما تنتقل معك.', [
+                { text: 'إلغاء', style: 'cancel' },
+                { text: 'كمّل', onPress: () => signOut().catch(() => {}) },
+              ])
+            }
+          />
         </Card>
       ) : null}
 
