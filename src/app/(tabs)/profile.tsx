@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Switch } from 'react-native';
+import { Alert, Switch } from 'react-native';
 
 import { Avatar, Button, Card, Notice, Row, Screen, T, Tag, useTheme } from '@/components/ui';
 import { genderWorld } from '@/lib/format';
@@ -9,7 +9,18 @@ import { useApp, useProfile } from '@/lib/store';
 export default function Profile() {
   const c = useTheme();
   const me = useProfile();
-  const { togglePrivacy, signOut } = useApp();
+  const { togglePrivacy, signOut, online } = useApp();
+  const confirmSignOut = () => {
+    if (!online) {
+      signOut();
+      return;
+    }
+    // Accounts are anonymous until phone sign-in exists, so signing out loses them.
+    Alert.alert('تسجيل الخروج', 'حسابك حاليًا مرتبط بهالجوال بس. إذا طلعت، ما تقدر ترجع له. متأكد؟', [
+      { text: 'إلغاء', style: 'cancel' },
+      { text: 'تسجيل الخروج', style: 'destructive', onPress: () => signOut().catch(() => {}) },
+    ]);
+  };
   const f = me.gender === 'f';
 
   return (
@@ -37,11 +48,11 @@ export default function Profile() {
 
       <Card>
         <T style={{ fontWeight: '700' }}>الخصوصية</T>
-        <PrivacyRow label="إخفاء صورتي إلا عن اللي معي في الجلسة" value={me.privacy.hidePhoto} onChange={() => togglePrivacy('hidePhoto')} accent={c.accent} />
-        <PrivacyRow label="إظهار الاسم الأول فقط" value={me.privacy.firstNameOnly} onChange={() => togglePrivacy('firstNameOnly')} accent={c.accent} />
+        <PrivacyRow label="إخفاء صورتي إلا عن اللي معي في الجلسة" value={me.privacy.hidePhoto} onChange={() => togglePrivacy('hidePhoto').catch(() => {})} accent={c.accent} />
+        <PrivacyRow label="إظهار الاسم الأول فقط" value={me.privacy.firstNameOnly} onChange={() => togglePrivacy('firstNameOnly').catch(() => {})} accent={c.accent} />
       </Card>
 
-      <Button kind="secondary" label="تسجيل الخروج" onPress={signOut} />
+      <Button kind="secondary" label="تسجيل الخروج" onPress={confirmSignOut} />
     </Screen>
   );
 }

@@ -8,18 +8,18 @@ import { num, venueHoursFor } from '@/lib/format';
 import { hobby } from '@/lib/hobbies';
 import { useApp, useProfile } from '@/lib/store';
 
-// TODO(places): load venues from Supabase (curated table, PostGIS distance),
-// and use Google Places only to discover new candidates for review.
-// Add a map view once a maps library is chosen (needs a development build).
+// TODO(places): add a map view once a maps library is chosen (needs a
+// development build), and an internal tool that suggests new venues from
+// Google Places for review.
 
 export default function Places() {
   const me = useProfile();
-  const { venues } = useApp();
+  const { venues, refresh, refreshing } = useApp();
   const [filter, setFilter] = useState<string | null>(null);
   const list = venues.filter((v) => v.hobbies.some((h) => matchesFilter(h, filter, me.hobbies)));
 
   return (
-    <Screen>
+    <Screen refreshing={refreshing} onRefresh={() => refresh().catch(() => {})}>
       <T variant="heading">أماكن قريبة لهواياتك</T>
       <HobbyFilter value={filter} onChange={setFilter} />
       {list.length ? (

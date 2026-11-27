@@ -9,13 +9,13 @@ import { useApp, useProfile } from '@/lib/store';
 
 export default function People() {
   const me = useProfile();
-  const { matches } = useApp();
+  const { matches, refresh, refreshing } = useApp();
   const [filter, setFilter] = useState<string | null>(null);
   const f = me.gender === 'f';
   const list = matches.filter((m) => filter === null || m.shared.includes(filter));
 
   return (
-    <Screen>
+    <Screen refreshing={refreshing} onRefresh={() => refresh().catch(() => {})}>
       <T variant="heading">{f ? 'بنات يشاركونك اهتماماتك' : 'شباب يشاركونك اهتماماتك'}</T>
       <T variant="muted">مرتبين حسب التوافق: الهوايات المشتركة، قرب المستوى، والمسافة. نعرض المسافة التقريبية فقط، مو الموقع.</T>
       <HobbyFilter value={filter} onChange={setFilter} />
@@ -27,7 +27,7 @@ export default function People() {
               <T style={{ flex: 1, fontWeight: '700' }}>{p.firstName}</T>
               <Tag tone="highlight" label={`${num(score)}٪`} />
             </Row>
-            <T variant="small">{`تقريبًا ${num(Math.round(p.distanceKm))} كم · متاح: ${p.availability}`}</T>
+            <T variant="small">{`تقريبًا ${num(Math.round(p.distanceKm))} كم${p.availability ? ` · متاح: ${p.availability}` : ''}`}</T>
             <Row wrap style={{ gap: 6 }}>
               {shared.map((h) => (
                 <Tag key={h} tone="accent" label={`${hobby(h).emoji} ${hobby(h).name} · ${levelLabel(h, p.hobbies[h])}`} />
@@ -38,7 +38,7 @@ export default function People() {
           </Card>
         ))
       ) : (
-        <Empty>ما فيه أحد بنفس هالهواية قريب منك حاليًا.</Empty>
+        <Empty>{'ما فيه أحد بنفس هواياتك قريب منك حاليًا.\nادعُ أصحابك يسجلون في شلة!'}</Empty>
       )}
     </Screen>
   );

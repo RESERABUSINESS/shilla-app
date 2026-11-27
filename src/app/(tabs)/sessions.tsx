@@ -12,7 +12,7 @@ import type { SessionKind } from '@/lib/types';
 export default function Sessions() {
   const c = useTheme();
   const me = useProfile();
-  const { sessions } = useApp();
+  const { sessions, refresh, refreshing } = useApp();
   const [filter, setFilter] = useState<string | null>(null);
   const [kind, setKind] = useState<SessionKind | null>(null);
 
@@ -20,7 +20,7 @@ export default function Sessions() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Screen>
+      <Screen refreshing={refreshing} onRefresh={() => refresh().catch(() => {})}>
         <Row style={{ justifyContent: 'space-between' }}>
           <T variant="heading">قريب منك هالأسبوع</T>
           <Tag tone="accent" label={`🔒 ${genderWorld(me.gender)} فقط`} />

@@ -12,3 +12,7 @@ do $$ begin
 end $$;
 grant usage on schema auth, extensions to authenticated, anon;
 alter database current_database_placeholder set search_path = public, extensions;
+-- Supabase creates this publication; the realtime migration adds tables to it.
+do $$ begin
+  if not exists (select 1 from pg_publication where pubname = 'supabase_realtime') then create publication supabase_realtime; end if;
+end $$;

@@ -40,15 +40,17 @@ export const SAMPLE_PEOPLE: Person[] = [
 ];
 
 let msgId = 0;
-const greet = (author: string, text: string) => [{ id: `m${++msgId}`, author, text, sentAt: '' }];
+const greet = (author: string, text: string) => [{ id: `m${++msgId}`, authorId: author, author, text, sentAt: '' }];
+// In sample data a person's id is their name.
+const m = (...names: string[]) => names.map((name) => ({ id: name, name }));
 
 export const SAMPLE_SESSIONS: Session[] = [
-  { id: 's1', kind: 'meetup', gender: 'm', hobbyId: 'padel', venueId: 'v2', startsAtLabel: 'الخميس · ٨:٠٠ م', level: 1, hostName: 'فهد', capacity: 4, members: ['فهد', 'سعود'], messages: greet('فهد', 'هلا والله! الموعد ثابت، نتقابل قبله بعشر دقايق') },
-  { id: 's2', kind: 'workshop', gender: 'm', hobbyId: 'coffee', venueId: 'v12', startsAtLabel: 'الجمعة · ٧:٠٠ م', level: 0, hostName: 'محمصة حَبّة', capacity: 10, members: ['سعود', 'عبدالله', 'بدر', 'زياد'], priceSar: 120, durationLabel: 'ساعتين', messages: greet('محمصة حَبّة', 'أهلًا فيكم! كل الأدوات علينا') },
-  { id: 's3', kind: 'meetup', gender: 'm', hobbyId: 'football', venueId: 'v3', startsAtLabel: 'الجمعة · ٩:٣٠ م', level: 1, hostName: 'تركي', capacity: 10, members: ['تركي', 'فهد', 'بدر', 'سلطان', 'راكان', 'زياد', 'ماجد'], messages: greet('تركي', 'نحتاج ٣ بس ونكمل الفريقين') },
-  { id: 's4', kind: 'meetup', gender: 'm', hobbyId: 'hiking', venueId: 'v6', startsAtLabel: 'السبت · ٥:٣٠ ص', level: 1, hostName: 'خالد', capacity: 0, members: ['خالد', 'مشعل'], messages: greet('خالد', 'التجمع عند بداية المسار، جيبوا موية كافية') },
-  { id: 's5', kind: 'workshop', gender: 'f', hobbyId: 'pottery', venueId: 'v10', startsAtLabel: 'الخميس · ٥:٠٠ م', level: 0, hostName: 'استوديو طين', capacity: 8, members: ['جود', 'أريج', 'غلا', 'وعد', 'رهف'], priceSar: 250, durationLabel: '٣ ساعات، تشمل الطين والحرق', messages: greet('استوديو طين', 'أهلًا فيكم! تعالوا بملابس مريحة') },
-  { id: 's6', kind: 'meetup', gender: 'f', hobbyId: 'padel', venueId: 'v2', startsAtLabel: 'الثلاثاء · ٥:٠٠ م · فترة نسائية', level: 1, hostName: 'نورة', capacity: 4, members: ['نورة', 'ريم'], messages: greet('نورة', 'حجزت الملعب، باقي لنا لاعبتين') },
-  { id: 's7', kind: 'meetup', gender: 'f', hobbyId: 'reading', venueId: 'v17', startsAtLabel: 'الأربعاء · ٨:٠٠ م', level: 1, hostName: 'لمى', capacity: 12, members: ['لمى', 'لينا', 'نوف', 'ملاك'], messages: greet('لمى', 'كتاب هالشهر: «ثلاثية غرناطة»') },
-  { id: 's8', kind: 'meetup', gender: 'f', hobbyId: 'running', venueId: 'v5', startsAtLabel: 'السبت · ٦:٠٠ ص', level: 1, hostName: 'سارة', capacity: 0, members: ['سارة', 'هيفاء', 'دانة'], messages: greet('سارة', 'نبدأ بإحماء خفيف عند البوابة') },
+  { id: 's1', kind: 'meetup', gender: 'm', hobbyId: 'padel', venueId: 'v2', startsAtLabel: 'الخميس · ٨:٠٠ م', level: 1, hostId: 'فهد', hostName: 'فهد', capacity: 4, members: m('فهد', 'سعود'), messages: greet('فهد', 'هلا والله! الموعد ثابت، نتقابل قبله بعشر دقايق') },
+  { id: 's2', kind: 'workshop', gender: 'm', hobbyId: 'coffee', venueId: 'v12', startsAtLabel: 'الجمعة · ٧:٠٠ م', level: 0, hostId: 'محمصة حَبّة', hostName: 'محمصة حَبّة', capacity: 10, members: m('سعود', 'عبدالله', 'بدر', 'زياد'), priceSar: 120, durationLabel: 'ساعتين', messages: greet('محمصة حَبّة', 'أهلًا فيكم! كل الأدوات علينا') },
+  { id: 's3', kind: 'meetup', gender: 'm', hobbyId: 'football', venueId: 'v3', startsAtLabel: 'الجمعة · ٩:٣٠ م', level: 1, hostId: 'تركي', hostName: 'تركي', capacity: 10, members: m('تركي', 'فهد', 'بدر', 'سلطان', 'راكان', 'زياد', 'ماجد'), messages: greet('تركي', 'نحتاج ٣ بس ونكمل الفريقين') },
+  { id: 's4', kind: 'meetup', gender: 'm', hobbyId: 'hiking', venueId: 'v6', startsAtLabel: 'السبت · ٥:٣٠ ص', level: 1, hostId: 'خالد', hostName: 'خالد', capacity: 0, members: m('خالد', 'مشعل'), messages: greet('خالد', 'التجمع عند بداية المسار، جيبوا موية كافية') },
+  { id: 's5', kind: 'workshop', gender: 'f', hobbyId: 'pottery', venueId: 'v10', startsAtLabel: 'الخميس · ٥:٠٠ م', level: 0, hostId: 'استوديو طين', hostName: 'استوديو طين', capacity: 8, members: m('جود', 'أريج', 'غلا', 'وعد', 'رهف'), priceSar: 250, durationLabel: '٣ ساعات، تشمل الطين والحرق', messages: greet('استوديو طين', 'أهلًا فيكم! تعالوا بملابس مريحة') },
+  { id: 's6', kind: 'meetup', gender: 'f', hobbyId: 'padel', venueId: 'v2', startsAtLabel: 'الثلاثاء · ٥:٠٠ م · فترة نسائية', level: 1, hostId: 'نورة', hostName: 'نورة', capacity: 4, members: m('نورة', 'ريم'), messages: greet('نورة', 'حجزت الملعب، باقي لنا لاعبتين') },
+  { id: 's7', kind: 'meetup', gender: 'f', hobbyId: 'reading', venueId: 'v17', startsAtLabel: 'الأربعاء · ٨:٠٠ م', level: 1, hostId: 'لمى', hostName: 'لمى', capacity: 12, members: m('لمى', 'لينا', 'نوف', 'ملاك'), messages: greet('لمى', 'كتاب هالشهر: «ثلاثية غرناطة»') },
+  { id: 's8', kind: 'meetup', gender: 'f', hobbyId: 'running', venueId: 'v5', startsAtLabel: 'السبت · ٦:٠٠ ص', level: 1, hostId: 'سارة', hostName: 'سارة', capacity: 0, members: m('سارة', 'هيفاء', 'دانة'), messages: greet('سارة', 'نبدأ بإحماء خفيف عند البوابة') },
 ];

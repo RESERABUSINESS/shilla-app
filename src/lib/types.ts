@@ -38,7 +38,10 @@ export type Venue = {
 
 export type SessionKind = 'meetup' | 'workshop';
 
-export type ChatMessage = { id: string; author: string; text: string; sentAt: string };
+export type ChatMessage = { id: string; authorId: string; author: string; text: string; sentAt: string };
+
+/** A person taking part in a session. */
+export type Member = { id: string; name: string };
 
 export type Session = {
   id: string;
@@ -49,13 +52,17 @@ export type Session = {
   venueId: string;
   startsAtLabel: string;
   level: number;
+  hostId: string;
   hostName: string;
   /** Capacity. 0 = open group. For workshops, the number of seats. */
   capacity: number;
-  members: string[];
+  members: Member[];
+  /** Venue name, so the card can show it even when the venue is outside the nearby list. */
+  venueName?: string;
   /** Workshops only. */
   priceSar?: number;
   durationLabel?: string;
+  /** Only used in sample mode; with Supabase, chat loads per session. */
   messages: ChatMessage[];
 };
 

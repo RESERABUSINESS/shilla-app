@@ -1,22 +1,22 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, TextInput, View } from 'react-native';
+import { Alert, FlatList, KeyboardAvoidingView, Platform, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, Empty, Row, T, useTheme } from '@/components/ui';
 import { num } from '@/lib/format';
 import { hobby } from '@/lib/hobbies';
-import { useApp, useProfile } from '@/lib/store';
-
-// TODO(chat): back this with a Supabase Realtime channel on the messages table.
+import { errorMessage } from '@/lib/remote';
+import { useApp, useChat, useProfile } from '@/lib/store';
 
 export default function SessionChat() {
   const c = useTheme();
   const me = useProfile();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { sessions, venues, sendMessage } = useApp();
+  const { sessions, venues } = useApp();
   const [text, setText] = useState('');
   const s = sessions.find((x) => x.id === id);
+  const chat = useChat(s);
 
   if (!s) {
     return (
@@ -29,13 +29,18 @@ export default function SessionChat() {
 
   const h = hobby(s.hobbyId);
   const venue = venues.find((v) => v.id === s.venueId);
-  const canChat = s.members.includes(me.firstName) || s.hostName === me.firstName;
+  const canChat = s.members.some((m) => m.id === me.id) || s.hostId === me.id;
 
-  const send = () => {
+  const send = async () => {
     const t = text.trim();
     if (!t) return;
-    sendMessage(s.id, t);
     setText('');
+    try {
+      await chat.send(t);
+    } catch (e) {
+      setText(t);
+      Alert.alert('ما انرسلت الرسالة', errorMessage(e));
+    }
   };
 
   return (
@@ -44,16 +49,17 @@ export default function SessionChat() {
         <Row style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: c.border, backgroundColor: c.surface }}>
           <Button kind="secondary" label="رجوع" onPress={() => router.back()} />
           <View style={{ flex: 1 }}>
-            <T style={{ fontWeight: '700' }}>{`${h.emoji} ${s.kind === 'workshop' ? 'ورشة ' : ''}${h.name} · ${venue?.name ?? ''}`}</T>
+            <T style={{ fontWeight: '700' }}>{`${h.emoji} ${s.kind === 'workshop' ? 'ورشة ' : ''}${h.name} · ${venue?.name ?? s.venueName ?? ''}`}</T>
             <T variant="small">{`${s.startsAtLabel} · ${num(s.members.length)} أعضاء`}</T>
           </View>
         </Row>
         <FlatList
-          data={s.messages}
+          data={chat.messages}
+          ListEmptyComponent={<T variant="muted" style={{ textAlign: 'center' }}>{chat.error ?? (canChat ? 'ابدأ السالفة، قل هلا للشلة 👋' : 'المحادثة للأعضاء فقط.')}</T>}
           keyExtractor={(m) => m.id}
           contentContainerStyle={{ padding: 16, gap: 8 }}
           renderItem={({ item: m }) => {
-            const mine = m.author === me.firstName;
+            const mine = m.authorId === me.id;
             return (
               <View
                 style={{

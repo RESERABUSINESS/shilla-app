@@ -39,7 +39,13 @@ academies can post paid workshops. Launch market: Riyadh, Saudi Arabia.
 - Supabase: Postgres + PostGIS, Auth (phone OTP first, Nafath later), Realtime for
   chat, Storage for photos. Client in `src/lib/supabase.ts`, configured by
   `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` (see `.env.example`).
-- Until Supabase is configured the app runs on sample data from `src/data/sample.ts`.
+- `.env` holds the Supabase URL and publishable key (public by design; RLS protects
+  the data). Without them the app runs on sample data from `src/data/sample.ts`.
+- Data access lives in `src/lib/remote.ts`; `src/lib/store.tsx` picks Supabase or
+  sample mode. Sign-in is anonymous for now (TODO: phone OTP, then Nafath).
+- Supabase project: `shilla` (ref `lgfbdiuhzksyogllvjlg`). Apply new migrations
+  there after `npm run test:db` passes. `supabase/seed_sample_venues.sql` holds
+  fictional test venues.
 
 ## Commands
 

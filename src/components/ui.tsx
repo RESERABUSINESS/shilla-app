@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, type PressableProps, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, type PressableProps, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useApp } from '@/lib/store';
@@ -11,10 +11,25 @@ export function useTheme(): Colors {
   return useColors(profile?.gender ?? 'm');
 }
 
-export function Screen({ children, scroll = true, footer }: { children: ReactNode; scroll?: boolean; footer?: ReactNode }) {
+export function Screen({
+  children,
+  scroll = true,
+  footer,
+  refreshing,
+  onRefresh,
+}: {
+  children: ReactNode;
+  scroll?: boolean;
+  footer?: ReactNode;
+  refreshing?: boolean;
+  onRefresh?: () => void;
+}) {
   const c = useTheme();
   const body = scroll ? (
-    <ScrollView contentContainerStyle={styles.screenContent} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      contentContainerStyle={styles.screenContent}
+      keyboardShouldPersistTaps="handled"
+      refreshControl={onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={c.accent} /> : undefined}>
       {children}
     </ScrollView>
   ) : (
