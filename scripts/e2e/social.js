@@ -1,0 +1,31 @@
+const {chromium}=require('playwright');
+const URL=process.env.E2E_URL||'http://localhost:8097/';const R=Date.now().toString(36);
+(async()=>{const b=await chromium.launch();const errs=[];
+const mk=async(n)=>{const c=await b.newContext({viewport:{width:390,height:844},geolocation:{latitude:24.81,longitude:46.62},permissions:['geolocation']});const p=await c.newPage();p.on('dialog',d=>d.accept());p.on('pageerror',e=>errs.push(n+': '+e.message));return p;};
+const step=async(n,f)=>{try{await f();console.log('OK',n)}catch(e){console.log('FAIL',n,e.message.split('\n')[0]);throw e}};
+const signup=async(p,name,g,hob='بادل')=>{await p.goto(URL);await p.getByText('أنشئ حساب',{exact:true}).click();
+ await p.getByPlaceholder('اسمك').fill(name);await p.getByPlaceholder('name@example.com').fill(`qa-${g}-${R}-${Math.random().toString(36).slice(2,6)}@mailinator.com`);await p.getByPlaceholder('٦ أحرف أو أكثر').fill('Shilla2026!');
+ await p.getByText(g==='f'?'بنت':'شاب',{exact:true}).click();await p.getByText('التالي: اختر هواياتك').click();
+ await p.getByText(hob,{exact:true}).click();await p.getByText(/يلا نبدأ/).click();await p.getByText('قريب منك هالأسبوع').waitFor({timeout:20000});};
+const A=await mk('A'),B=await mk('B');
+await step('A signup (running)',()=>signup(A,'فهدتست','m','جري'));
+await step('B signup (running)',()=>signup(B,'سعودتست','m','جري'));
+await step('places show real venues',async()=>{await A.goto(URL+'places');await A.getByText(/حديقة/).first().waitFor({timeout:20000});await A.getByText(/OpenStreetMap/).first().waitFor();});
+await step('A creates running session',async()=>{await A.goto(URL+'sessions');await A.getByText('جلسة جديدة').click();await A.getByText('انشر الجلسة').waitFor();await A.getByText('بكرة',{exact:true}).click();await A.getByText('انشر الجلسة').click();await A.getByText('جلستك').first().waitFor({timeout:20000});});
+await step('A invites B',async()=>{
+  await A.screenshot({path:'inv0.png'});
+  // open session details via chat->back is fiddly; navigate by URL from session list link
+  await A.getByText('المحادثة').first().click();await A.waitForURL(/session\/chat\//,{timeout:15000});const sid=A.url().split('?')[0].split('/').pop();
+  console.log('sid',sid,A.url());await A.goto(URL+'session/'+sid);await A.waitForTimeout(2500);await A.screenshot({path:'inv1.png'});await A.getByText('ادعُ ناس للجلسة').click();await A.getByText('سعودتست',{exact:true}).waitFor({timeout:20000});
+  await A.getByText('ادعُ',{exact:true}).first().click();await A.getByText('انرسلت الدعوة ✓').waitFor({timeout:15000});
+  globalThis.SID=sid;});
+await step('B gets notification badge live',async()=>{await B.goto(URL+'sessions');await B.getByLabel('الإشعارات').waitFor();await B.waitForTimeout(3000);await B.reload();await B.getByLabel('الإشعارات').click();await B.getByText(/فهدتست يدعوك لجلسة/).waitFor({timeout:20000});});
+await step('B accepts invite',async()=>{await B.getByText('أقبل وأنضم').click();await B.getByText('انسحب من الجلسة').waitFor({timeout:20000});});
+await step('A notified B joined',async()=>{await A.goto(URL+'notifications');await A.getByText(/سعودتست انضم لجلستك/).waitFor({timeout:20000});});
+await step('A sees B in members',async()=>{await A.goto(URL+'session/'+globalThis.SID);await A.getByText('سعودتست',{exact:true}).waitFor({timeout:15000});});
+await step('B suggests a venue',async()=>{await B.goto(URL+'suggest-venue');await B.getByPlaceholder('مثلًا: ملاعب بادل الياسمين').fill('ملعب اختبار شلة');await B.getByText('🏃 جري',{exact:true}).click();await B.getByText('أضف المكان').click();await B.waitForTimeout(3000);await B.goto(URL+'places');await B.getByText('ملعب اختبار شلة').waitFor({timeout:20000});await B.getByText('اقتراح مستخدم').first().waitFor();});
+await step('B changes name in settings',async()=>{await B.goto(URL+'settings');await B.getByLabel('اسمك الأول').fill('سعودجديد');await B.getByText('احفظ الاسم').click();await B.waitForTimeout(2000);await B.goto(URL+'profile');await B.getByText('سعودجديد').first().waitFor({timeout:15000});});
+await step('A cancels session, B notified',async()=>{await A.goto(URL+'session/'+globalThis.SID);await A.getByText('ألغِ الجلسة').click();await A.waitForURL(u=>!String(u).includes('/session/'),{timeout:15000}).catch(()=>{});await B.goto(URL+'notifications');await B.getByText(/انلغت جلسة كنت منضم لها/).waitFor({timeout:20000});});
+await step('B deletes account',async()=>{await B.goto(URL+'settings');await B.getByText('حذف الحساب نهائيًا').click();await B.getByText('أنشئ حساب',{exact:true}).waitFor({timeout:20000});});
+await A.screenshot({path:'s_A.png'});
+console.log('errors',errs.slice(0,5));await b.close();process.exit(0);})().catch(()=>process.exit(1));

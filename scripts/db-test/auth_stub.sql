@@ -16,3 +16,8 @@ alter database current_database_placeholder set search_path = public, extensions
 do $$ begin
   if not exists (select 1 from pg_publication where pubname = 'supabase_realtime') then create publication supabase_realtime; end if;
 end $$;
+-- Stand-in for pg_net: records outgoing HTTP calls so tests can check pushes.
+create schema if not exists net;
+create table if not exists net._calls (url text, body jsonb, at timestamptz default now());
+create or replace function net.http_post(url text, body jsonb, headers jsonb default '{}'::jsonb)
+returns bigint language sql as $$ insert into net._calls (url, body) values (url, body) returning 1::bigint $$;

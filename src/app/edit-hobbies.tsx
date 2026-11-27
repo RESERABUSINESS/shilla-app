@@ -1,9 +1,9 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert } from 'react-native';
 
 import { HobbyPicker } from '@/components/HobbyPicker';
 import { Button, Screen, T } from '@/components/ui';
+import { notice } from '@/lib/confirm';
 import { errorMessage } from '@/lib/remote';
 import { useApp, useProfile } from '@/lib/store';
 
@@ -25,7 +25,7 @@ export default function EditHobbies() {
               await setHobbies(value);
               router.back();
             } catch (e) {
-              Alert.alert('ما قدرنا نحفظ', errorMessage(e));
+              notice('ما قدرنا نحفظ', errorMessage(e));
               setBusy(false);
             }
           }}

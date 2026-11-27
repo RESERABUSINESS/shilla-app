@@ -149,3 +149,85 @@ do $$ begin
   assert (select count(*) from public.people_matches()) = 0, 'blocked users are not matched';
 end $$;
 reset role;
+
+-- Social: notifications, invites, push, cancel, delete -----------------------
+\set s1 '''20000000-0000-0000-0000-000000000001'''
+insert into public.push_tokens (token, user_id) values ('ExponentPushToken[f3-device]', :f3);
+
+-- The host was notified when f2 joined her session.
+set role authenticated;
+set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000f1';
+do $$ begin
+  assert (select count(*) from public.notifications where kind = 'joined') = 1, 'host gets a joined notification';
+end $$;
+
+-- f2 (a member) invites f3: allowed. Inviting a man is not.
+set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000f2';
+insert into public.invites (session_id, from_id, to_id)
+values ('20000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-0000000000f2', '00000000-0000-0000-0000-0000000000f3');
+do $$ begin
+  insert into public.invites (session_id, from_id, to_id)
+  values ('20000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-0000000000f2', '00000000-0000-0000-0000-0000000000a2');
+  raise exception 'SHOULD FAIL: woman invited a man';
+exception when others then if sqlerrm like 'SHOULD FAIL%' then raise; end if;
+end $$;
+do $$ begin
+  insert into public.invites (session_id, from_id, to_id)
+  values ('20000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-0000000000f2', '00000000-0000-0000-0000-0000000000f9');
+  raise exception 'SHOULD FAIL: invited to a session of the other side';
+exception when others then if sqlerrm like 'SHOULD FAIL%' then raise; end if;
+end $$;
+do $$ begin
+  assert (select count(*) from public.notifications) = 0, 'f2 sees no one else''s notifications';
+end $$;
+
+-- f3 sees the invite and its notification, and can decline it.
+set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000f3';
+do $$ begin
+  assert (select count(*) from public.invites where status = 'pending') = 1, 'invitee sees the invite';
+  assert (select count(*) from public.notifications where kind = 'invite') = 1, 'invitee is notified';
+end $$;
+update public.invites set status = 'declined' where to_id = '00000000-0000-0000-0000-0000000000f3';
+
+-- A man sees none of this.
+set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000a1';
+do $$ begin
+  assert (select count(*) from public.invites) = 0, 'men see no women''s invites';
+  assert (select count(*) from public.notifications) = 0, 'men see no women''s notifications';
+end $$;
+
+-- The host cancels; members are notified.
+set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000f1';
+update public.sessions set status = 'cancelled' where id = '20000000-0000-0000-0000-000000000001';
+set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000f2';
+do $$ begin
+  assert (select count(*) from public.notifications where kind = 'cancelled') = 1, 'members hear about cancellation';
+end $$;
+
+-- f3 deletes her account.
+set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000f3';
+select public.delete_my_account();
+reset role;
+do $$ begin
+  assert (select count(*) from net._calls where body::text like '%f3-device%') >= 1, 'push was sent to the invitee''s device';
+  assert (select count(*) from public.profiles where id = '00000000-0000-0000-0000-0000000000f3') = 0, 'account deletion removes the profile';
+  assert (select count(*) from public.push_tokens where user_id = '00000000-0000-0000-0000-0000000000f3') = 0, 'and the push tokens';
+end $$;
+
+-- Venue suggestions -----------------------------------------------------------
+set role authenticated;
+set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000a1';
+select public.suggest_venue('ملعب بادل الحي', 'ملعب بادل', 24.80, 46.63, 'm', array['padel']) is not null as suggested;
+do $$ begin
+  assert (select count(*) from public.venues where source = 'user' and not verified) = 1, 'suggestion is visible and unverified';
+  insert into public.venues (name, kind, location, audience, source, verified, created_by)
+  values ('x', 'y', st_makepoint(46.6, 24.8)::geography, 'both', 'user', true, '00000000-0000-0000-0000-0000000000a1');
+  raise exception 'SHOULD FAIL: user marked own venue verified';
+exception when others then if sqlerrm like 'SHOULD FAIL%' then raise; end if;
+end $$;
+do $$ begin
+  insert into public.venue_hobbies values ('10000000-0000-0000-0000-000000000001', 'chess');
+  raise exception 'SHOULD FAIL: added a hobby to someone else''s venue';
+exception when others then if sqlerrm like 'SHOULD FAIL%' then raise; end if;
+end $$;
+reset role;

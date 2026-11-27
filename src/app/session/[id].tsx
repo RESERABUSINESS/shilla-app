@@ -1,101 +1,149 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, FlatList, KeyboardAvoidingView, Platform, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Linking, Pressable, Share, View } from 'react-native';
 
-import { Button, Empty, Row, T, useTheme } from '@/components/ui';
-import { num } from '@/lib/format';
-import { hobby } from '@/lib/hobbies';
+import { Icon } from '@/components/Icon';
+import { Avatar, Button, Card, Empty, Progress, Row, Screen, T, Tag, useTheme } from '@/components/ui';
+import { confirmAction, notice } from '@/lib/confirm';
+import { num, venueHoursFor } from '@/lib/format';
+import { hobby, levelLabel, participantsWord } from '@/lib/hobbies';
 import { errorMessage } from '@/lib/remote';
-import { useApp, useChat, useProfile } from '@/lib/store';
+import { useApp, useProfile } from '@/lib/store';
 
-export default function SessionChat() {
+export default function SessionDetails() {
   const c = useTheme();
   const me = useProfile();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { sessions, venues } = useApp();
-  const [text, setText] = useState('');
+  const { sessions, venues, toggleMembership, cancelSession, online, refresh, refreshing } = useApp();
+  const [busy, setBusy] = useState(false);
   const s = sessions.find((x) => x.id === id);
-  const chat = useChat(s);
 
   if (!s) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: c.background }}>
-        <Empty>ما لقينا هالجلسة.</Empty>
-        <Button kind="secondary" label="رجوع" onPress={() => router.back()} style={{ margin: 16 }} />
-      </SafeAreaView>
+      <Screen>
+        <Empty>{'ما لقينا هالجلسة.\nيمكن انلغت أو خلص موعدها.'}</Empty>
+        <Button kind="secondary" label="رجوع" onPress={() => router.back()} />
+      </Screen>
     );
   }
 
   const h = hobby(s.hobbyId);
   const venue = venues.find((v) => v.id === s.venueId);
-  const canChat = s.members.some((m) => m.id === me.id) || s.hostId === me.id;
+  const isHost = s.hostId === me.id;
+  const isMember = isHost || s.members.some((m) => m.id === me.id);
+  const isWorkshop = s.kind === 'workshop';
+  const full = s.capacity > 0 && s.members.length >= s.capacity;
+  const title = `${isWorkshop ? 'ورشة ' : ''}${h.name}`;
+  const venueName = venue?.name ?? s.venueName ?? '';
 
-  const send = async () => {
-    const t = text.trim();
-    if (!t) return;
-    setText('');
+  const run = async (fn: () => Promise<void>) => {
+    setBusy(true);
     try {
-      await chat.send(t);
+      await fn();
     } catch (e) {
-      setText(t);
-      Alert.alert('ما انرسلت الرسالة', errorMessage(e));
+      notice('ما تمت العملية', errorMessage(e));
+    } finally {
+      setBusy(false);
     }
   };
 
+  const directions = () => {
+    const q = venue?.latitude != null ? `${venue.latitude},${venue.longitude}` : `${venueName} الرياض`;
+    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`).catch(() => {});
+  };
+
+  const share = () =>
+    Share.share({
+      message: `تعال معي ${title} ${s.startsAtLabel}${venueName ? ` في ${venueName}` : ''}. حمّل تطبيق شلة وانضم للجلسة!`,
+    }).catch(() => {});
+
+  const confirmCancel = () =>
+    confirmAction('إلغاء الجلسة', 'بنبلغ كل اللي انضموا إن الجلسة انلغت. متأكد؟', 'ألغِ الجلسة', () =>
+      run(async () => {
+        await cancelSession(s.id);
+        router.back();
+      }),
+    );
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: c.background }}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <Row style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: c.border, backgroundColor: c.surface }}>
-          <Button kind="secondary" label="رجوع" onPress={() => router.back()} />
-          <View style={{ flex: 1 }}>
-            <T style={{ fontWeight: '700' }}>{`${h.emoji} ${s.kind === 'workshop' ? 'ورشة ' : ''}${h.name} · ${venue?.name ?? s.venueName ?? ''}`}</T>
-            <T variant="small">{`${s.startsAtLabel} · ${num(s.members.length)} أعضاء`}</T>
-          </View>
-        </Row>
-        <FlatList
-          data={chat.messages}
-          ListEmptyComponent={<T variant="muted" style={{ textAlign: 'center' }}>{chat.error ?? (canChat ? 'ابدأ السالفة، قل هلا للشلة 👋' : 'المحادثة للأعضاء فقط.')}</T>}
-          keyExtractor={(m) => m.id}
-          contentContainerStyle={{ padding: 16, gap: 8 }}
-          renderItem={({ item: m }) => {
-            const mine = m.authorId === me.id;
-            return (
-              <View
-                style={{
-                  maxWidth: '80%',
-                  alignSelf: mine ? 'flex-end' : 'flex-start',
-                  backgroundColor: mine ? c.accent : c.surface,
-                  borderColor: mine ? c.accent : c.border,
-                  borderWidth: 1,
-                  borderRadius: 14,
-                  paddingVertical: 8,
-                  paddingHorizontal: 12,
-                }}>
-                {!mine ? <T variant="small" style={{ fontWeight: '700' }}>{m.author}</T> : null}
-                <T style={{ color: mine ? c.onAccent : c.text }}>{m.text}</T>
-              </View>
-            );
-          }}
-        />
-        {canChat ? (
-          <Row style={{ padding: 12, borderTopWidth: 1, borderTopColor: c.border, backgroundColor: c.surface }}>
-            <TextInput
-              value={text}
-              onChangeText={setText}
-              onSubmitEditing={send}
-              placeholder="اكتب رسالة…"
-              placeholderTextColor={c.muted}
-              style={{ flex: 1, borderWidth: 1, borderColor: c.border, borderRadius: 12, padding: 10, color: c.text, backgroundColor: c.surfaceAlt, textAlign: 'right' }}
-            />
-            <Button label="إرسال" onPress={send} />
+    <Screen refreshing={refreshing} onRefresh={() => refresh().catch(() => {})}>
+      <Row style={{ justifyContent: 'space-between' }}>
+        <Pressable accessibilityRole="button" accessibilityLabel="رجوع" onPress={() => router.back()} hitSlop={12}>
+          <Icon name="chevron-forward" size={26} color={c.text} />
+        </Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="مشاركة" onPress={share} hitSlop={12}>
+          <Icon name="share-outline" size={24} color={c.text} />
+        </Pressable>
+      </Row>
+
+      <Row style={{ gap: 12 }}>
+        <View style={{ width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: c.surfaceAlt }}>
+          <T style={{ fontSize: 30 }}>{h.emoji}</T>
+        </View>
+        <View style={{ flex: 1, gap: 4 }}>
+          <T variant="title" style={{ fontSize: 24 }}>{title}</T>
+          <Row wrap style={{ gap: 6 }}>
+            <Tag label={levelLabel(s.hobbyId, s.level)} />
+            {isWorkshop && s.priceSar ? <Tag tone="highlight" label={`${num(s.priceSar)} ر.س`} /> : null}
+            {h.teams ? <Tag label="فرق" /> : null}
           </Row>
-        ) : (
-          <View style={{ padding: 16 }}>
-            <T variant="muted" style={{ textAlign: 'center' }}>انضم للجلسة عشان تقدر تكتب في المحادثة.</T>
-          </View>
-        )}
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        </View>
+      </Row>
+
+      <Card>
+        <InfoRow icon="time-outline" text={`${s.startsAtLabel}${s.durationLabel ? ` · ${s.durationLabel}` : ''}`} />
+        <InfoRow icon="location-outline" text={venue ? `${venueName} · ${venue.kind} · ${num(venue.distanceKm)} كم` : venueName} />
+        {venue ? <InfoRow icon="information-circle-outline" text={venueHoursFor(venue, me.gender)} /> : null}
+        <InfoRow icon="person-outline" text={`${isWorkshop ? 'يقدمها' : 'ينظمها'}: ${s.hostName}`} />
+        <Button kind="secondary" label="الاتجاهات" onPress={directions} />
+      </Card>
+
+      <Card>
+        <Row style={{ justifyContent: 'space-between' }}>
+          <T style={{ fontWeight: '700' }}>المنضمين</T>
+          <T variant="small">
+            {s.capacity
+              ? `${num(s.members.length)} من ${num(s.capacity)} ${participantsWord(s.hobbyId)}`
+              : `${num(s.members.length)} · مجموعة مفتوحة`}
+          </T>
+        </Row>
+        {s.capacity ? <Progress value={s.members.length / s.capacity} /> : null}
+        {s.members.map((m) => (
+          <Row key={m.id} style={{ gap: 10 }}>
+            <Avatar name={m.name} size={34} />
+            <T style={{ flex: 1 }}>{m.id === me.id ? `${m.name} (أنت)` : m.name}</T>
+            {m.id === s.hostId ? <Tag tone="accent" label={isWorkshop ? 'المقدم' : 'المنظم'} /> : null}
+          </Row>
+        ))}
+      </Card>
+
+      {isMember ? (
+        <View style={{ gap: 10 }}>
+          <Button label="المحادثة" onPress={() => router.push(`/session/chat/${s.id}`)} />
+          {online ? <Button kind="secondary" label="ادعُ ناس للجلسة" onPress={() => router.push(`/session/invite/${s.id}`)} /> : null}
+          {isHost ? (
+            <Button kind="secondary" label="ألغِ الجلسة" disabled={busy} onPress={confirmCancel} />
+          ) : (
+            <Button kind="secondary" label={isWorkshop ? 'ألغِ حجزي' : 'انسحب من الجلسة'} disabled={busy} onPress={() => run(() => toggleMembership(s.id))} />
+          )}
+        </View>
+      ) : (
+        <Button
+          label={full ? 'الجلسة مكتملة' : isWorkshop ? 'احجز مقعد' : 'انضم للجلسة'}
+          disabled={full || busy}
+          onPress={() => run(() => toggleMembership(s.id))}
+        />
+      )}
+    </Screen>
+  );
+}
+
+function InfoRow({ icon, text }: { icon: 'time-outline' | 'location-outline' | 'information-circle-outline' | 'person-outline'; text: string }) {
+  const c = useTheme();
+  return (
+    <Row style={{ gap: 10, alignItems: 'flex-start' }}>
+      <Icon name={icon} size={20} color={c.accent} />
+      <T style={{ flex: 1, lineHeight: 22 }}>{text}</T>
+    </Row>
   );
 }

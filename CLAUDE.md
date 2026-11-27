@@ -45,8 +45,13 @@ academies can post paid workshops. Launch market: Riyadh, Saudi Arabia.
   sample mode. Accounts use email + password (TODO: phone OTP, then Nafath);
   a few early accounts are anonymous and get a prompt to create an email account.
 - Supabase project: `shilla` (ref `lgfbdiuhzksyogllvjlg`). Apply new migrations
-  there after `npm run test:db` passes. `supabase/seed_sample_venues.sql` holds
-  fictional test venues.
+  there after `npm run test:db` passes. Venues are real (OpenStreetMap import,
+  `source = 'osm'`, unverified) plus user suggestions (`source = 'user'`).
+  OSM does not know who a venue serves; keep showing the "confirm times" note.
+- Notifications: triggers write `notifications` rows and send Expo pushes via
+  `pg_net`; the app also schedules a local reminder an hour before a session.
+- Use `confirmAction` / `notice` from `src/lib/confirm.ts`, never `Alert.alert`
+  directly: Alert does nothing on the web.
 
 ## Thmanyah font (do not forget before a store build)
 
@@ -72,6 +77,8 @@ npm run lint              # eslint
 npm run test:db           # database rule checks (needs local Postgres + PostGIS)
 ```
 
+End-to-end tests against the real backend: see `scripts/e2e/README.md`.
+
 Install packages with `npx expo install <pkg>` so versions match the Expo SDK.
 
 Before calling a change done: `npm run typecheck` and `npm run lint` pass, and if
@@ -81,11 +88,14 @@ the change touches `supabase/`, `npm run test:db` passes.
 
 ```
 src/app/(onboarding)/   welcome, verify, hobbies (sign-up flow)
-src/app/(tabs)/         sessions, places, people, profile
-src/app/session/        new (create), [id] (details and chat)
-src/components/         shared UI (ui.tsx), SessionCard, HobbyPicker, HobbyFilter
-src/lib/                hobbies catalog, types, store (state), theme, format, supabase
+src/app/(tabs)/         sessions, places (map + list), people, profile
+src/app/session/        new, [id] (details), chat/[id], invite/[id]
+src/app/                notifications, settings, suggest-venue, invite-person/[id], edit-hobbies
+src/components/         shared UI (ui.tsx), SessionCard, HobbyPicker, HobbyFilter, VenueMap (+ .web), Icon
+src/lib/                hobbies catalog, types, store (state), remote (Supabase), notifications,
+                        confirm (dialogs that also work on web), theme, format, fonts
 supabase/migrations/    schema, RLS, triggers, RPC functions
 supabase/seed.sql       hobby catalog
+supabase/import_osm_venues.sql  re-runnable import of real Riyadh venues from OpenStreetMap
 scripts/db-test/        runs the migration on local Postgres and checks the rules
 ```

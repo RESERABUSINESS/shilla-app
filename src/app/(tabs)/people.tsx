@@ -1,15 +1,16 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert } from 'react-native';
 
 import { HobbyFilter } from '@/components/HobbyFilter';
 import { Avatar, Button, Card, Empty, Row, Screen, T, Tag } from '@/components/ui';
+import { notice } from '@/lib/confirm';
 import { num } from '@/lib/format';
 import { hobby, levelLabel } from '@/lib/hobbies';
 import { useApp, useProfile } from '@/lib/store';
 
 export default function People() {
   const me = useProfile();
-  const { matches, refresh, refreshing } = useApp();
+  const { matches, refresh, refreshing, online } = useApp();
   const [filter, setFilter] = useState<string | null>(null);
   const f = me.gender === 'f';
   const list = matches.filter((m) => filter === null || m.shared.includes(filter));
@@ -33,8 +34,10 @@ export default function People() {
                 <Tag key={h} tone="accent" label={`${hobby(h).emoji} ${hobby(h).name} · ${levelLabel(h, p.hobbies[h])}`} />
               ))}
             </Row>
-            {/* TODO(invites): send an invite notification through Supabase. */}
-            <Button label={f ? 'ادعيها لجلسة' : 'ادعه لجلسة'} onPress={() => Alert.alert('أرسلنا الدعوة', `وصلت دعوتك لـ${p.firstName}`)} />
+            <Button
+              label={f ? 'ادعيها لجلسة' : 'ادعه لجلسة'}
+              onPress={() => (online ? router.push(`/invite-person/${p.id}`) : notice('الدعوات', 'الدعوات تحتاج الاتصال بالخادم.'))}
+            />
           </Card>
         ))
       ) : (

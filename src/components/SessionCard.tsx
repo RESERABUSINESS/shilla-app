@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 
+import { notice } from '@/lib/confirm';
 import { num } from '@/lib/format';
 import { hobby, levelLabel, participantsWord } from '@/lib/hobbies';
 import { errorMessage } from '@/lib/remote';
@@ -25,7 +26,7 @@ export function SessionCard({ session: s }: { session: Session }) {
     try {
       await toggleMembership(s.id);
     } catch (e) {
-      Alert.alert('ما تمت العملية', errorMessage(e));
+      notice('ما تمت العملية', errorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -70,7 +71,7 @@ export function SessionCard({ session: s }: { session: Session }) {
         {joined || isHost ? (
           <>
             <Button style={{ flex: 1 }} kind="done" label={isHost ? 'جلستك' : isWorkshop ? 'محجوز ✓' : 'منضم ✓'} disabled={busy} onPress={() => !isHost && toggle()} />
-            <Button style={{ flex: 1 }} label="المحادثة" onPress={() => router.push(`/session/${s.id}`)} />
+            <Button style={{ flex: 1 }} label="المحادثة" onPress={() => router.push(`/session/chat/${s.id}`)} />
           </>
         ) : (
           <>

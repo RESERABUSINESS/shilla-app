@@ -18,6 +18,21 @@ export type Profile = {
   district: string;
   hobbies: HobbyLevels;
   privacy: { hidePhoto: boolean; firstNameOnly: boolean };
+  notify: NotifyPrefs;
+};
+
+export type NotifyPrefs = { push: boolean; messages: boolean; reminders: boolean };
+
+export type AppNotification = {
+  id: string;
+  kind: 'joined' | 'invite' | 'cancelled';
+  sessionId?: string;
+  inviteId?: string;
+  inviteStatus?: 'pending' | 'accepted' | 'declined';
+  actorName?: string;
+  hobbyId?: string;
+  read: boolean;
+  createdAt: string;
 };
 
 export type Venue = {
@@ -34,6 +49,11 @@ export type Venue = {
   priceLabel: string;
   rating: number;
   distanceKm: number;
+  latitude?: number;
+  longitude?: number;
+  /** False for places imported from OpenStreetMap or suggested by users. */
+  verified?: boolean;
+  source?: 'manual' | 'osm' | 'owner' | 'user';
 };
 
 export type SessionKind = 'meetup' | 'workshop';
@@ -51,6 +71,8 @@ export type Session = {
   hobbyId: string;
   venueId: string;
   startsAtLabel: string;
+  /** ISO time; used for reminders. Missing in sample data. */
+  startsAt?: string;
   level: number;
   hostId: string;
   hostName: string;

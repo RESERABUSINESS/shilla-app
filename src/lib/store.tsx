@@ -9,14 +9,18 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Platform } from 'react-native';
 
 import { SAMPLE_PEOPLE, SAMPLE_SESSIONS, SAMPLE_VENUES } from '@/data/sample';
 
 import { formatStartsAt, venueVisibleTo } from './format';
 import { hobby } from './hobbies';
+import * as notify from './notifications';
 import * as remote from './remote';
 import { isSupabaseConfigured } from './supabase';
-import type { ChatMessage, HobbyLevels, Person, Profile, Session, Venue } from './types';
+import type { AppNotification, ChatMessage, HobbyLevels, NotifyPrefs, Person, Profile, Session, Venue } from './types';
+
+const DEFAULT_NOTIFY: NotifyPrefs = { push: true, messages: true, reminders: true };
 
 const PROFILE_KEY = 'shilla.profile.v1';
 
@@ -41,6 +45,17 @@ type Store = {
   togglePrivacy: (key: keyof Profile['privacy']) => Promise<void>;
   toggleMembership: (sessionId: string) => Promise<void>;
   createSession: (s: NewSession) => Promise<string>;
+  cancelSession: (sessionId: string) => Promise<void>;
+  notifications: AppNotification[];
+  unread: number;
+  markAllRead: () => Promise<void>;
+  invite: (sessionId: string, personId: string) => Promise<void>;
+  /** Accept joins the session; decline just answers the invite. */
+  answerInvite: (n: AppNotification, accept: boolean) => Promise<void>;
+  saveName: (firstName: string) => Promise<void>;
+  setNotifyPrefs: (p: NotifyPrefs) => Promise<void>;
+  suggestVenue: (s: remote.SuggestInput) => Promise<void>;
+  deleteAccount: () => Promise<void>;
   signOut: () => Promise<void>;
   /** Sample mode only: append a chat message locally. */
   addSampleMessage: (sessionId: string, text: string) => void;
@@ -67,14 +82,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [remoteVenues, setRemoteVenues] = useState<Venue[]>([]);
   const [remoteMatches, setRemoteMatches] = useState<Match[]>([]);
   const [sampleSessions, setSampleSessions] = useState<Session[]>(SAMPLE_SESSIONS);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const signedInGender = profile?.gender;
 
   const load = useCallback(async () => {
     if (!online || !signedInGender) return;
-    const [s, v, m] = await Promise.all([remote.loadSessions(), remote.loadVenues(), remote.loadMatches(signedInGender)]);
+    const [s, v, m, n] = await Promise.all([
+      remote.loadSessions(),
+      remote.loadVenues(),
+      remote.loadMatches(signedInGender),
+      remote.loadNotifications(),
+    ]);
     setRemoteSessions(s);
     setRemoteVenues(v);
     setRemoteMatches(m);
+    setNotifications(n);
   }, [online, signedInGender]);
 
   const refresh = useCallback(async () => {
@@ -93,7 +115,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       : AsyncStorage.getItem(PROFILE_KEY).then((raw) => (raw ? (JSON.parse(raw) as Profile) : null));
     restore
       .then(async (p) => {
-        setProfile(p);
+        setProfile(p ? { ...p, notify: p.notify ?? DEFAULT_NOTIFY } : null);
         if (online && p) setAnonymous(await remote.isAnonymousAccount());
       })
       .catch(() => setProfile(null))
@@ -105,18 +127,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!online || !signedInId || !signedInGender) return;
     let alive = true;
-    Promise.all([remote.loadSessions(), remote.loadVenues(), remote.loadMatches(signedInGender)])
-      .then(([s, v, m]) => {
+    Promise.all([remote.loadSessions(), remote.loadVenues(), remote.loadMatches(signedInGender), remote.loadNotifications()])
+      .then(([s, v, m, n]) => {
         if (!alive) return;
         setRemoteSessions(s);
         setRemoteVenues(v);
         setRemoteMatches(m);
+        setNotifications(n);
       })
       .catch(() => {});
+    // Live notifications: reload the feed and sessions when one arrives.
+    const unsubscribe = remote.subscribeNotifications(signedInId, () => {
+      Promise.all([remote.loadNotifications(), remote.loadSessions()])
+        .then(([n, s]) => {
+          if (!alive) return;
+          setNotifications(n);
+          setRemoteSessions(s);
+        })
+        .catch(() => {});
+    });
     return () => {
       alive = false;
+      unsubscribe();
     };
   }, [online, signedInId, signedInGender]);
+
+  // Register this device for push notifications once signed in.
+  const wantsPush = profile?.notify?.push;
+  useEffect(() => {
+    if (!online || !signedInId || !wantsPush) return;
+    notify
+      .getPushToken()
+      .then((token) => (token ? remote.savePushToken(signedInId, token, Platform.OS) : undefined))
+      .catch(() => {});
+  }, [online, signedInId, wantsPush]);
 
   const persistLocal = useCallback((p: Profile | null) => {
     setProfile(p);
@@ -165,6 +209,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           district: 'الملقا',
           hobbies: input.hobbies,
           privacy: { hidePhoto: input.gender === 'f', firstNameOnly: input.gender === 'f' },
+          notify: DEFAULT_NOTIFY,
         });
       },
 
@@ -194,6 +239,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (online) {
           if (isMember) await remote.leaveSession(id, profile.id);
           else await remote.joinSession(id, profile.id);
+          if (isMember) notify.cancelReminder(id);
+          else if (profile.notify.reminders) notify.scheduleReminder(session);
           await refresh();
           return;
         }
@@ -209,6 +256,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (!profile) throw new Error('Not signed in');
         if (online) {
           const id = await remote.createSession(profile, input);
+          if (profile.notify.reminders) {
+            notify.scheduleReminder({ id, hobbyId: input.hobbyId, startsAt: input.startsAt.toISOString() });
+          }
           await refresh();
           return id;
         }
@@ -244,13 +294,84 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return p !== null;
       },
 
+      cancelSession: async (id) => {
+        if (online) {
+          await remote.cancelSession(id);
+          await refresh();
+        } else setSampleSessions((list) => list.filter((s) => s.id !== id));
+        notify.cancelReminder(id);
+      },
+
+      notifications,
+      unread: notifications.filter((n) => !n.read).length,
+
+      markAllRead: async () => {
+        if (!online || !notifications.some((n) => !n.read)) return;
+        setNotifications((list) => list.map((n) => ({ ...n, read: true })));
+        await remote.markNotificationsRead();
+      },
+
+      invite: async (sessionId, personId) => {
+        if (!profile) return;
+        if (online) await remote.sendInvite(sessionId, profile.id, personId);
+      },
+
+      answerInvite: async (n, accept) => {
+        if (!profile || !n.inviteId || !n.sessionId) return;
+        if (accept) await remote.joinSession(n.sessionId, profile.id);
+        else await remote.declineInvite(n.inviteId);
+        const [list, s] = await Promise.all([remote.loadNotifications(), remote.loadSessions()]);
+        setNotifications(list);
+        setRemoteSessions(s);
+        const joined = s.find((x) => x.id === n.sessionId);
+        if (accept && joined && profile.notify.reminders) notify.scheduleReminder(joined);
+      },
+
+      saveName: async (firstName) => {
+        if (!profile) return;
+        const next = { ...profile, firstName: firstName.trim() };
+        if (online) {
+          await remote.saveName(profile.id, firstName);
+          setProfile(next);
+        } else persistLocal(next);
+      },
+
+      setNotifyPrefs: async (prefs) => {
+        if (!profile) return;
+        const next = { ...profile, notify: prefs };
+        if (online) {
+          await remote.saveNotifyPrefs(profile.id, prefs);
+          setProfile(next);
+        } else persistLocal(next);
+        if (!prefs.reminders) notify.cancelAllReminders();
+      },
+
+      suggestVenue: async (input) => {
+        if (!online) throw new Error('Suggesting a place needs the server');
+        await remote.suggestVenue(input);
+        await refresh();
+      },
+
+      deleteAccount: async () => {
+        if (online) await remote.deleteAccount();
+        notify.cancelAllReminders();
+        setProfile(null);
+        setRemoteSessions([]);
+        setRemoteVenues([]);
+        setRemoteMatches([]);
+        setNotifications([]);
+        if (!online) persistLocal(null);
+      },
+
       signOut: async () => {
+        notify.cancelAllReminders();
         if (online) {
           await remote.signOut();
           setProfile(null);
           setRemoteSessions([]);
           setRemoteVenues([]);
           setRemoteMatches([]);
+          setNotifications([]);
         } else persistLocal(null);
       },
 
@@ -262,7 +383,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }));
       },
     };
-  }, [ready, online, profile, refreshing, refresh, anonymous, remoteSessions, remoteVenues, remoteMatches, sampleSessions, persistLocal]);
+  }, [ready, online, profile, refreshing, refresh, anonymous, remoteSessions, remoteVenues, remoteMatches, sampleSessions, notifications, persistLocal]);
 
   return <Ctx.Provider value={store}>{children}</Ctx.Provider>;
 }

@@ -7,7 +7,7 @@ import * as Location from 'expo-location';
 import { formatDuration, formatStartsAt } from './format';
 import { hobby } from './hobbies';
 import { supabase } from './supabase';
-import type { ChatMessage, Gender, HobbyLevels, Person, Profile, Session, Venue, VenueAudience } from './types';
+import type { AppNotification, ChatMessage, Gender, HobbyLevels, NotifyPrefs, Person, Profile, Session, Venue, VenueAudience } from './types';
 
 const LOCATION_KEY = 'shilla.location.v1';
 /** Al Malqa, Riyadh: used when the user does not share their location. */
@@ -25,6 +25,10 @@ function db() {
 export function errorMessage(e: unknown): string {
   const msg = e instanceof Error ? e.message : typeof e === 'object' && e && 'message' in e ? String((e as { message: unknown }).message) : String(e);
   if (msg.includes('session is full')) return 'الجلسة اكتملت.';
+  if (msg.includes('already a member')) return 'هالشخص منضم للجلسة من قبل.';
+  if (msg.includes('only participants can invite')) return 'لازم تكون منضم للجلسة عشان تدعو أحد.';
+  if (msg.includes('duplicate key') && msg.includes('invites')) return 'دعيته لهالجلسة من قبل.';
+  if (msg.includes('invalid suggestion')) return 'اكتب اسم المكان واختر هواية وحدة على الأقل.';
   if (msg.includes('session is not open')) return 'الجلسة ما عادت متاحة.';
   if (msg.includes('blocked')) return 'ما تقدر تنضم لهالجلسة.';
   if (msg.includes('Anonymous sign-ins are disabled')) return 'التسجيل مقفل حاليًا في الخادم.';
@@ -79,6 +83,9 @@ type ProfileRow = {
   district: string | null;
   hide_photo: boolean;
   first_name_only: boolean;
+  notify_push: boolean;
+  notify_messages: boolean;
+  notify_reminders: boolean;
   user_hobbies: { hobby_id: string; level: number }[];
 };
 
@@ -94,6 +101,7 @@ function toProfile(r: ProfileRow): Profile {
     district: r.district ?? '',
     hobbies: levelsOf(r.user_hobbies),
     privacy: { hidePhoto: r.hide_photo, firstNameOnly: r.first_name_only },
+    notify: { push: r.notify_push, messages: r.notify_messages, reminders: r.notify_reminders },
   };
 }
 
@@ -103,7 +111,7 @@ export async function loadProfile(): Promise<Profile | null> {
   if (!auth.session) return null;
   const { data, error } = await db()
     .from('profiles')
-    .select('id, first_name, gender, city, district, hide_photo, first_name_only, user_hobbies(hobby_id, level)')
+    .select('id, first_name, gender, city, district, hide_photo, first_name_only, notify_push, notify_messages, notify_reminders, user_hobbies(hobby_id, level)')
     .eq('id', auth.session.user.id)
     .maybeSingle();
   if (error) throw error;
@@ -183,6 +191,31 @@ export async function signIn(email: string, password: string): Promise<Profile |
   return loadProfile();
 }
 
+export async function saveName(userId: string, firstName: string) {
+  const { error } = await db().from('profiles').update({ first_name: firstName.trim() }).eq('id', userId);
+  if (error) throw error;
+}
+
+export async function saveNotifyPrefs(userId: string, p: NotifyPrefs) {
+  const { error } = await db()
+    .from('profiles')
+    .update({ notify_push: p.push, notify_messages: p.messages, notify_reminders: p.reminders })
+    .eq('id', userId);
+  if (error) throw error;
+}
+
+export async function savePushToken(userId: string, token: string, platform: string) {
+  const { error } = await db().from('push_tokens').upsert({ token, user_id: userId, platform, updated_at: new Date().toISOString() });
+  if (error) throw error;
+}
+
+/** Permanently deletes the account and everything that belongs to it. */
+export async function deleteAccount() {
+  const { error } = await db().rpc('delete_my_account');
+  if (error) throw error;
+  await db().auth.signOut();
+}
+
 export async function signOut() {
   await db().auth.signOut();
 }
@@ -203,6 +236,10 @@ type VenueRow = {
   rating: number | null;
   hobbies: string[];
   distance_km: number;
+  latitude: number;
+  longitude: number;
+  verified: boolean;
+  source: Venue['source'];
 };
 
 export async function loadVenues(): Promise<Venue[]> {
@@ -221,7 +258,26 @@ export async function loadVenues(): Promise<Venue[]> {
     priceLabel: v.price_label ?? '',
     rating: Number(v.rating ?? 0),
     distanceKm: v.distance_km,
+    latitude: v.latitude,
+    longitude: v.longitude,
+    verified: v.verified,
+    source: v.source,
   }));
+}
+
+export type SuggestInput = { name: string; kind: string; lat: number; lng: number; audience: VenueAudience; hobbies: string[] };
+
+export async function suggestVenue(s: SuggestInput): Promise<string> {
+  const { data, error } = await db().rpc('suggest_venue', {
+    p_name: s.name,
+    p_kind: s.kind,
+    lat: s.lat,
+    lng: s.lng,
+    p_audience: s.audience,
+    p_hobbies: s.hobbies,
+  });
+  if (error) throw error;
+  return data as string;
 }
 
 // ---------------------------------------------------------------------------
@@ -260,6 +316,7 @@ function toSession(r: SessionRow): Session {
     venueId: r.venue_id,
     venueName: r.venue?.name,
     startsAtLabel: formatStartsAt(new Date(r.starts_at)) + womenSlot,
+    startsAt: r.starts_at,
     level: r.level,
     hostId: r.host_id,
     hostName: r.host?.first_name ?? '',
@@ -291,6 +348,12 @@ export async function joinSession(sessionId: string, userId: string) {
 
 export async function leaveSession(sessionId: string, userId: string) {
   const { error } = await db().from('session_members').delete().eq('session_id', sessionId).eq('user_id', userId);
+  if (error) throw error;
+}
+
+/** Host only. Members get a notification from the database. */
+export async function cancelSession(sessionId: string) {
+  const { error } = await db().from('sessions').update({ status: 'cancelled' }).eq('id', sessionId);
   if (error) throw error;
 }
 
@@ -387,4 +450,66 @@ export async function loadMatches(gender: Gender): Promise<{ person: Person; sha
     shared: r.shared_hobbies,
     score: r.score,
   }));
+}
+
+// ---------------------------------------------------------------------------
+// Invites and notifications
+// ---------------------------------------------------------------------------
+
+export async function sendInvite(sessionId: string, fromId: string, toId: string) {
+  const { error } = await db().from('invites').insert({ session_id: sessionId, from_id: fromId, to_id: toId });
+  if (error) throw error;
+}
+
+export async function declineInvite(inviteId: string) {
+  const { error } = await db().from('invites').update({ status: 'declined' }).eq('id', inviteId);
+  if (error) throw error;
+}
+
+type NotificationRow = {
+  id: number;
+  kind: AppNotification['kind'];
+  session_id: string | null;
+  invite_id: string | null;
+  actor_name: string | null;
+  hobby_id: string | null;
+  read_at: string | null;
+  created_at: string;
+  invite: { status: AppNotification['inviteStatus'] } | null;
+};
+
+export async function loadNotifications(): Promise<AppNotification[]> {
+  const { data, error } = await db()
+    .from('notifications')
+    .select('id, kind, session_id, invite_id, actor_name, hobby_id, read_at, created_at, invite:invites(status)')
+    .order('created_at', { ascending: false })
+    .limit(50);
+  if (error) throw error;
+  return (data as unknown as NotificationRow[]).map((n) => ({
+    id: String(n.id),
+    kind: n.kind,
+    sessionId: n.session_id ?? undefined,
+    inviteId: n.invite_id ?? undefined,
+    inviteStatus: n.invite?.status ?? undefined,
+    actorName: n.actor_name ?? undefined,
+    hobbyId: n.hobby_id ?? undefined,
+    read: n.read_at !== null,
+    createdAt: n.created_at,
+  }));
+}
+
+export async function markNotificationsRead() {
+  const { error } = await db().from('notifications').update({ read_at: new Date().toISOString() }).is('read_at', null);
+  if (error) throw error;
+}
+
+/** Calls `onNew` when a notification arrives for the signed-in user. */
+export function subscribeNotifications(userId: string, onNew: () => void) {
+  const channel = db()
+    .channel(`notifications:${userId}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, onNew)
+    .subscribe();
+  return () => {
+    db().removeChannel(channel);
+  };
 }

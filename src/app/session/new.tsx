@@ -1,8 +1,8 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Alert } from 'react-native';
 
 import { Button, Chip, ChipRow, Notice, Screen, T } from '@/components/ui';
+import { notice } from '@/lib/confirm';
 import { combineDayTime, dayOptions, forGender, num, TIME_OPTIONS, venueHoursFor } from '@/lib/format';
 import { hobby, levelLabel } from '@/lib/hobbies';
 import { errorMessage } from '@/lib/remote';
@@ -18,7 +18,8 @@ export default function NewSession() {
   const days = useMemo(() => dayOptions(new Date(now)), [now]);
 
   const [hobbyId, setHobbyId] = useState(presetVenue?.hobbies.find((h) => h in me.hobbies) ?? myHobbies[0]);
-  const options = useMemo(() => venues.filter((v) => v.hobbies.includes(hobbyId)), [venues, hobbyId]);
+  // Nearest 20 places that offer this hobby (venues are already sorted by distance).
+  const options = useMemo(() => venues.filter((v) => v.hobbies.includes(hobbyId)).slice(0, 20), [venues, hobbyId]);
   const [venueId, setVenueId] = useState<string | undefined>(presetVenue?.id ?? options[0]?.id);
   const [dayIndex, setDayIndex] = useState(1);
   const [timeIndex, setTimeIndex] = useState(4);
@@ -43,7 +44,7 @@ export default function NewSession() {
       await createSession({ hobbyId, venueId: venue.id, startsAt, level });
       router.back();
     } catch (e) {
-      Alert.alert('ما قدرنا ننشر الجلسة', errorMessage(e));
+      notice('ما قدرنا ننشر الجلسة', errorMessage(e));
       setBusy(false);
     }
   };
