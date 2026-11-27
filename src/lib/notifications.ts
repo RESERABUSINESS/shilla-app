@@ -32,7 +32,7 @@ async function ensurePermission(): Promise<boolean> {
   try {
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', {
-        name: 'شلة',
+        name: 'صحبة',
         // Re-exported through `export *`, which the lint rule cannot follow; tsc checks it.
         // eslint-disable-next-line import/namespace
         importance: Notifications.AndroidImportance.DEFAULT,

@@ -32,7 +32,7 @@ export default function Terms() {
         </Pressable>
       </Row>
       <Card>
-        <T style={{ fontWeight: '700' }}>قواعد شلة</T>
+        <T style={{ fontWeight: '700' }}>قواعد صحبة</T>
         {RULES.map((r, i) => (
           <T key={r} style={{ lineHeight: 24 }}>{`${(i + 1).toLocaleString('ar-SA')}. ${r}`}</T>
         ))}
@@ -43,7 +43,7 @@ export default function Terms() {
           <T key={r} style={{ lineHeight: 24 }}>{`• ${r}`}</T>
         ))}
       </Card>
-      <T variant="small">باستخدامك شلة، أنت توافق على هالقواعد. مخالفتها ممكن توقف حسابك.</T>
+      <T variant="small">باستخدامك صحبة، أنت توافق على هالقواعد. مخالفتها ممكن توقف حسابك.</T>
     </Screen>
   );
 }

@@ -21,7 +21,7 @@ export default function Settings() {
     setLocating(true);
     try {
       const ok = await updateLocation();
-      if (!ok) notice('ما قدرنا نحدد موقعك', 'اسمح لشلة بالوصول للموقع من إعدادات الجوال، أو اختر مدينتك من القائمة.');
+      if (!ok) notice('ما قدرنا نحدد موقعك', 'اسمح لصحبة بالوصول للموقع من إعدادات الجوال، أو اختر مدينتك من القائمة.');
     } catch (e) {
       notice('ما قدرنا نحفظ', errorMessage(e));
     } finally {
@@ -116,17 +116,17 @@ export default function Settings() {
       </Card>
 
       <Card>
-        <T style={{ fontWeight: '700' }}>شارك شلة</T>
+        <T style={{ fontWeight: '700' }}>شارك صحبة</T>
         <Button
           kind="secondary"
           label="ادعُ أصحابك للتطبيق"
-          onPress={() => Share.share({ message: 'جرّب شلة: تلاقي ناس يشاركونك هوايتك وتمارسونها سوا، قريب منك.' }).catch(() => {})}
+          onPress={() => Share.share({ message: 'جرّب صحبة (Sohba): تلاقي ناس يشاركونك هوايتك وتمارسونها سوا، قريب منك.' }).catch(() => {})}
         />
       </Card>
 
       <Card>
         <T style={{ fontWeight: '700' }}>عن التطبيق</T>
-        <T variant="small">{`شلة · الإصدار ${Constants.expoConfig?.version ?? ''}`}</T>
+        <T variant="small">{`صحبة · الإصدار ${Constants.expoConfig?.version ?? ''}`}</T>
         <T variant="small">بيانات الأماكن من OpenStreetMap © مساهمو OpenStreetMap.</T>
       </Card>
 

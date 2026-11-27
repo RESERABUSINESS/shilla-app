@@ -66,12 +66,12 @@ export default function InviteToSession() {
           </Card>
         ))
       ) : (
-        <Empty>{`ما فيه أحد قريب منك يحب ${h.name} للحين.\nادعُ أصحابك يسجلون في شلة!`}</Empty>
+        <Empty>{`ما فيه أحد قريب منك يحب ${h.name} للحين.\nادعُ أصحابك يسجلون في صحبة!`}</Empty>
       )}
       <Button
         kind="secondary"
         label="ادعُ أصحابك من خارج التطبيق"
-        onPress={() => Share.share({ message: `تعال معي ${h.name} ${s.startsAtLabel}. حمّل تطبيق شلة وانضم للجلسة!` }).catch(() => {})}
+        onPress={() => Share.share({ message: `تعال معي ${h.name} ${s.startsAtLabel}. حمّل تطبيق صحبة وانضم للجلسة!` }).catch(() => {})}
       />
     </Screen>
   );

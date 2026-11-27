@@ -34,7 +34,7 @@ export default function ClaimVenue() {
     <Screen
       footer={<Button label={busy ? 'جاري الإرسال…' : 'أرسل الطلب'} disabled={busy || business.trim().length < 2 || contact.trim().length < 5} onPress={submit} />}>
       <T variant="heading">أنت صاحب المكان؟</T>
-      <T variant="muted">{`سجّل «${venue?.name ?? 'مكانك'}» كشريك في شلة: تنزل أوقاتك المتاحة، والناس يحجزون منك مباشرة من التطبيق.`}</T>
+      <T variant="muted">{`سجّل «${venue?.name ?? 'مكانك'}» كشريك في صحبة: تنزل أوقاتك المتاحة، والناس يحجزون منك مباشرة من التطبيق.`}</T>
       <Field label="اسم النشاط" value={business} onChangeText={setBusiness} maxLength={80} />
       <Field label="رقم التواصل" value={contact} onChangeText={setContact} keyboardType="phone-pad" placeholder="05xxxxxxxx" maxLength={80} />
       <Notice>بنتواصل معك على هالرقم للتأكد إنك صاحب المكان قبل ما نفعّل الحساب.</Notice>

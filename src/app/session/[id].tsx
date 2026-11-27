@@ -55,7 +55,7 @@ export default function SessionDetails() {
 
   const share = () =>
     Share.share({
-      message: `تعال معي ${title} ${s.startsAtLabel}${venueName ? ` في ${venueName}` : ''}. حمّل تطبيق شلة وانضم للجلسة!`,
+      message: `تعال معي ${title} ${s.startsAtLabel}${venueName ? ` في ${venueName}` : ''}. حمّل تطبيق صحبة وانضم للجلسة!`,
     }).catch(() => {});
 
   const confirmCancel = () =>
