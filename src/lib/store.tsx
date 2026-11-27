@@ -32,7 +32,12 @@ type Store = {
   matches: Match[];
   refreshing: boolean;
   refresh: () => Promise<void>;
+  /** True when the account has no email yet and would be lost on sign-out. */
+  anonymous: boolean;
   signUp: (input: remote.SignupInput) => Promise<void>;
+  /** Returns false when the account exists but never finished sign-up. */
+  signIn: (email: string, password: string) => Promise<boolean>;
+  saveAccount: (email: string, password: string) => Promise<void>;
   setHobbies: (h: HobbyLevels) => Promise<void>;
   togglePrivacy: (key: keyof Profile['privacy']) => Promise<void>;
   toggleMembership: (sessionId: string) => Promise<void>;
@@ -58,6 +63,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [anonymous, setAnonymous] = useState(false);
   const [remoteSessions, setRemoteSessions] = useState<Session[]>([]);
   const [remoteVenues, setRemoteVenues] = useState<Venue[]>([]);
   const [remoteMatches, setRemoteMatches] = useState<Match[]>([]);
@@ -87,7 +93,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ? remote.loadProfile()
       : AsyncStorage.getItem(PROFILE_KEY).then((raw) => (raw ? (JSON.parse(raw) as Profile) : null));
     restore
-      .then(setProfile)
+      .then(async (p) => {
+        setProfile(p);
+        if (online && p) setAnonymous(await remote.isAnonymousAccount());
+      })
       .catch(() => setProfile(null))
       .finally(() => setReady(true));
   }, [online]);
@@ -141,10 +150,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       matches: online ? remoteMatches : sample.matches,
       refreshing,
       refresh,
+      anonymous,
 
       signUp: async (input) => {
         if (online) {
           setProfile(await remote.signUp(input));
+          setAnonymous(await remote.isAnonymousAccount());
           return;
         }
         persistLocal({
@@ -226,6 +237,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return id;
       },
 
+      signIn: async (email, password) => {
+        if (!online) throw new Error('Sign-in needs the server');
+        const p = await remote.signIn(email, password);
+        setAnonymous(false);
+        setProfile(p);
+        return p !== null;
+      },
+
+      saveAccount: async (email, password) => {
+        if (!online) return;
+        await remote.saveAccount(email, password);
+        setAnonymous(await remote.isAnonymousAccount());
+      },
+
       signOut: async () => {
         if (online) {
           await remote.signOut();
@@ -244,7 +269,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }));
       },
     };
-  }, [ready, online, profile, refreshing, refresh, remoteSessions, remoteVenues, remoteMatches, sampleSessions, persistLocal]);
+  }, [ready, online, profile, refreshing, refresh, anonymous, remoteSessions, remoteVenues, remoteMatches, sampleSessions, persistLocal]);
 
   return <Ctx.Provider value={store}>{children}</Ctx.Provider>;
 }

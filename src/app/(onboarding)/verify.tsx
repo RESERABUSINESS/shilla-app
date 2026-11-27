@@ -1,56 +1,59 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { ActivityIndicator, Pressable, TextInput, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { useOnboarding } from '@/components/onboarding';
-import { Button, Row, Screen, T, useTheme } from '@/components/ui';
+import { Button, Field, isValidEmail, Row, Screen, T } from '@/components/ui';
 import { useColors } from '@/lib/theme';
 import type { Gender } from '@/lib/types';
 
-// TODO(auth): replace with phone OTP (Supabase Auth) now, and Nafath identity
-// verification later. In production gender comes from verification, never
-// from a user choice, and cannot be edited afterwards.
+// Account details. TODO(auth): phone OTP, then Nafath. In production gender
+// comes from identity verification, never from a user choice.
 
-export default function Verify() {
+export default function CreateAccount() {
   const { draft, update } = useOnboarding();
-  const base = useTheme();
-  const [busy, setBusy] = useState(false);
-  const canContinue = draft.firstName.trim().length > 1 && draft.gender !== null;
-
-  const submit = () => {
-    setBusy(true);
-    setTimeout(() => {
-      setBusy(false);
-      router.push('/hobbies');
-    }, 700);
-  };
+  const nameOk = draft.firstName.trim().length >= 2;
+  const emailOk = isValidEmail(draft.email);
+  const passwordOk = draft.password.length >= 6;
+  const canContinue = nameOk && emailOk && passwordOk && draft.gender !== null;
 
   return (
-    <Screen
-      footer={
-        <Button
-          label={busy ? 'جاري التحقق…' : 'تحقق (تجريبي)'}
-          disabled={!canContinue || busy}
-          onPress={submit}
-        />
-      }>
-      <T variant="heading">التحقق من الهوية</T>
-      <T variant="muted">نتحقق من الاسم والعمر والجنس. الجنس ما يتغير بعد التسجيل، وعلى أساسه تشوف التطبيق.</T>
-      <T style={{ fontWeight: '700' }}>الاسم الأول</T>
-      <TextInput
-        value={draft.firstName}
-        onChangeText={(firstName) => update({ firstName })}
-        placeholder="اسمك"
-        placeholderTextColor={base.muted}
-        maxLength={20}
-        style={{ borderWidth: 1, borderColor: base.border, backgroundColor: base.surface, color: base.text, borderRadius: 12, padding: 12, fontSize: 16, textAlign: 'right' }}
+    <Screen footer={<Button label="التالي: اختر هواياتك" disabled={!canContinue} onPress={() => router.push('/hobbies')} />}>
+      <T variant="heading">إنشاء حساب</T>
+      <T variant="muted">بالإيميل وكلمة المرور تقدر تدخل حسابك من أي جوال.</T>
+
+      <Field label="الاسم الأول" value={draft.firstName} onChangeText={(firstName) => update({ firstName })} placeholder="اسمك" maxLength={20} />
+      <Field
+        label="الإيميل"
+        value={draft.email}
+        onChangeText={(email) => update({ email })}
+        placeholder="name@example.com"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoComplete="email"
+        autoCorrect={false}
       />
+      {draft.email && !emailOk ? <T variant="small">اكتب إيميل صحيح.</T> : null}
+      <Field
+        label="كلمة المرور"
+        value={draft.password}
+        onChangeText={(password) => update({ password })}
+        placeholder="٦ أحرف أو أكثر"
+        secureTextEntry
+        autoCapitalize="none"
+        autoComplete="new-password"
+      />
+      {draft.password && !passwordOk ? <T variant="small">كلمة المرور لازم تكون ٦ أحرف أو أكثر.</T> : null}
+
+      <T style={{ fontWeight: '700' }}>أنت</T>
       <Row>
         <GenderOption value="m" title="شاب" hint="تشوف الشباب فقط" selected={draft.gender === 'm'} onPress={() => update({ gender: 'm' })} />
         <GenderOption value="f" title="بنت" hint="تشوفين البنات فقط" selected={draft.gender === 'f'} onPress={() => update({ gender: 'f' })} />
       </Row>
-      <T variant="small">في النسخة النهائية ما فيه اختيار هنا: الجنس يجي من التحقق مباشرة.</T>
-      {busy ? <ActivityIndicator /> : null}
+      <T variant="small">الجنس ما يتغير بعد التسجيل، وعلى أساسه تشوف التطبيق.</T>
+
+      <Pressable accessibilityRole="link" onPress={() => router.replace('/login')} style={{ paddingVertical: 8 }}>
+        <T style={{ textAlign: 'center', fontWeight: '700' }}>عندك حساب؟ سجّل دخول</T>
+      </Pressable>
     </Screen>
   );
 }

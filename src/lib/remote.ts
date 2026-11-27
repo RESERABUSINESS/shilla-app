@@ -28,6 +28,13 @@ export function errorMessage(e: unknown): string {
   if (msg.includes('session is not open')) return 'الجلسة ما عادت متاحة.';
   if (msg.includes('blocked')) return 'ما تقدر تنضم لهالجلسة.';
   if (msg.includes('Anonymous sign-ins are disabled')) return 'التسجيل مقفل حاليًا في الخادم.';
+  if (msg.includes('User already registered') || msg.includes('already been registered')) return 'هالإيميل مسجل من قبل. سجّل دخول بدل ما تنشئ حساب.';
+  if (msg.includes('Invalid login credentials')) return 'الإيميل أو كلمة المرور غلط.';
+  if (msg.includes('Email not confirmed')) return 'أكّد إيميلك من الرسالة اللي وصلتك، وبعدها سجّل دخول.';
+  if (msg.includes('CONFIRM_EMAIL')) return 'أرسلنا لك رسالة على الإيميل. اضغط الرابط اللي فيها، وبعدها سجّل دخول.';
+  if (msg.toLowerCase().includes('password') && msg.includes('6')) return 'كلمة المرور لازم تكون ٦ أحرف أو أكثر.';
+  if (msg.toLowerCase().includes('invalid') && msg.toLowerCase().includes('email')) return 'الإيميل مو صحيح.';
+  if (msg.toLowerCase().includes('rate limit')) return 'محاولات كثير. انتظر شوي وحاول مرة ثانية.';
   if (msg.toLowerCase().includes('network')) return 'تأكد من اتصالك بالإنترنت وحاول مرة ثانية.';
   return 'صار خطأ، حاول مرة ثانية.';
 }
@@ -103,17 +110,25 @@ export async function loadProfile(): Promise<Profile | null> {
   return data ? toProfile(data as ProfileRow) : null;
 }
 
-export type SignupInput = { firstName: string; gender: Gender; hobbies: HobbyLevels };
+export type SignupInput = { firstName: string; gender: Gender; hobbies: HobbyLevels; email: string; password: string };
 
-// TODO(auth): replace anonymous sign-in with phone OTP once an SMS provider is
-// configured in Supabase, and with Nafath later. Gender must then come from
+/** True when the signed-in account has no email yet (created before accounts existed). */
+export async function isAnonymousAccount(): Promise<boolean> {
+  const { data } = await db().auth.getSession();
+  return Boolean(data.session?.user.is_anonymous);
+}
+
+// Email + password accounts. TODO(auth): add phone OTP once an SMS provider is
+// configured in Supabase, and Nafath later. Gender must then come from
 // verification instead of the sign-up form.
 export async function signUp(input: SignupInput): Promise<Profile> {
   const { data: existing } = await db().auth.getSession();
   let userId = existing.session?.user.id;
   if (!userId) {
-    const { data, error } = await db().auth.signInAnonymously();
+    const { data, error } = await db().auth.signUp({ email: input.email.trim(), password: input.password });
     if (error) throw error;
+    // With "Confirm email" on, Supabase returns no session until the link is clicked.
+    if (!data.session) throw new Error('CONFIRM_EMAIL');
     userId = data.user!.id;
   }
 
@@ -158,6 +173,19 @@ export async function savePrivacy(userId: string, privacy: Profile['privacy']) {
     .from('profiles')
     .update({ hide_photo: privacy.hidePhoto, first_name_only: privacy.firstNameOnly })
     .eq('id', userId);
+  if (error) throw error;
+}
+
+/** Signs in and returns the profile, or null when the account never finished onboarding. */
+export async function signIn(email: string, password: string): Promise<Profile | null> {
+  const { error } = await db().auth.signInWithPassword({ email: email.trim(), password });
+  if (error) throw error;
+  return loadProfile();
+}
+
+/** Turns an anonymous account into an email account, keeping all its data. */
+export async function saveAccount(email: string, password: string) {
+  const { error } = await db().auth.updateUser({ email: email.trim(), password });
   if (error) throw error;
 }
 

@@ -11,7 +11,13 @@ const FEATURES = [
 
 export default function Welcome() {
   return (
-    <Screen footer={<Button label="ابدأ" onPress={() => router.push('/verify')} />}>
+    <Screen
+      footer={
+        <View style={{ gap: 10 }}>
+          <Button label="أنشئ حساب" onPress={() => router.push('/verify')} />
+          <Button kind="secondary" label="عندي حساب، سجّل دخول" onPress={() => router.push('/login')} />
+        </View>
+      }>
       <View style={{ marginTop: 32, gap: 16 }}>
         <T variant="title" style={{ fontSize: 48 }}>شلة</T>
         <T variant="heading" style={{ fontSize: 22, lineHeight: 34 }}>لاقِ ناس يشاركونك هوايتك، قريبين منك، وتمارسونها سوا.</T>

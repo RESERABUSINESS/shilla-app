@@ -32,6 +32,7 @@ function RootNavigator() {
         <Stack.Screen name="session/new" options={{ presentation: 'modal' }} />
         <Stack.Screen name="session/[id]" />
         <Stack.Screen name="edit-hobbies" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="save-account" options={{ presentation: 'modal' }} />
       </Stack.Protected>
     </Stack>
   );

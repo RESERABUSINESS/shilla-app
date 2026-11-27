@@ -9,14 +9,14 @@ import { useApp, useProfile } from '@/lib/store';
 export default function Profile() {
   const c = useTheme();
   const me = useProfile();
-  const { togglePrivacy, signOut, online } = useApp();
+  const { togglePrivacy, signOut, online, anonymous } = useApp();
   const confirmSignOut = () => {
-    if (!online) {
-      signOut();
+    if (!online || !anonymous) {
+      signOut().catch(() => {});
       return;
     }
-    // Accounts are anonymous until phone sign-in exists, so signing out loses them.
-    Alert.alert('تسجيل الخروج', 'حسابك حاليًا مرتبط بهالجوال بس. إذا طلعت، ما تقدر ترجع له. متأكد؟', [
+    // Anonymous accounts cannot be recovered after signing out.
+    Alert.alert('تسجيل الخروج', 'حسابك ما انحفظ بإيميل. إذا طلعت، ما تقدر ترجع له. احفظه أول من «احفظ حسابك». متأكد إنك تبغى تطلع؟', [
       { text: 'إلغاء', style: 'cancel' },
       { text: 'تسجيل الخروج', style: 'destructive', onPress: () => signOut().catch(() => {}) },
     ]);
@@ -33,6 +33,14 @@ export default function Profile() {
         </Row>
         <Notice>{`${f ? 'تشوفين' : 'تشوف'} عالم ${genderWorld(me.gender)} فقط، والجنس ما يتعدل بعد التحقق.`}</Notice>
       </Card>
+
+      {anonymous ? (
+        <Card selected>
+          <T style={{ fontWeight: '700' }}>احفظ حسابك</T>
+          <T variant="muted">حسابك مرتبط بهالجوال بس. أضف إيميل وكلمة مرور عشان ما يضيع وتقدر تدخله من أي جوال.</T>
+          <Button label="احفظ حسابي" onPress={() => router.push('/save-account')} />
+        </Card>
+      ) : null}
 
       <Card>
         <Row style={{ justifyContent: 'space-between' }}>

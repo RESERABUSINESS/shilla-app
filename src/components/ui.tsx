@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, type PressableProps, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps, type PressableProps, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useApp } from '@/lib/store';
@@ -175,3 +175,26 @@ const styles = StyleSheet.create({
   progress: { height: 6, borderRadius: 6, overflow: 'hidden', borderWidth: 1 },
   notice: { borderWidth: 1, borderRadius: radius.md, padding: 12 },
 });
+
+/** Labelled text input. */
+export function Field({ label, ...rest }: TextInputProps & { label: string }) {
+  const c = useTheme();
+  return (
+    <View style={{ gap: 6 }}>
+      <T style={{ fontWeight: '700' }}>{label}</T>
+      <TextInput
+        placeholderTextColor={c.muted}
+        accessibilityLabel={label}
+        {...rest}
+        style={{ borderWidth: 1, borderColor: c.border, backgroundColor: c.surface, color: c.text, borderRadius: 12, padding: 12, fontSize: 16, textAlign: 'right' }}
+      />
+    </View>
+  );
+}
+
+/** Inline error text. */
+export function ErrorText({ children }: { children: ReactNode }) {
+  return <T style={{ color: '#C62828', fontWeight: '700' }}>{children}</T>;
+}
+
+export const isValidEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
