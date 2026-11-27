@@ -44,3 +44,6 @@ example
 
 # Thmanyah font: license forbids uploading or hosting the files. Store builds only.
 assets/fonts/thmanyah/
+
+# Screenshots written by local test runs
+/*.png

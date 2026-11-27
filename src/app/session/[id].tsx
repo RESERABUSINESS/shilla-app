@@ -113,6 +113,15 @@ export default function SessionDetails() {
             <Avatar name={m.name} size={34} />
             <T style={{ flex: 1 }}>{m.id === me.id ? `${m.name} (أنت)` : m.name}</T>
             {m.id === s.hostId ? <Tag tone="accent" label={isWorkshop ? 'المقدم' : 'المنظم'} /> : null}
+            {m.id !== me.id && online ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`إبلاغ أو حظر ${m.name}`}
+                hitSlop={10}
+                onPress={() => router.push({ pathname: '/safety/[id]', params: { id: m.id, name: m.name, sessionId: s.id } })}>
+                <Icon name="ellipsis-horizontal" size={20} color={c.muted} />
+              </Pressable>
+            ) : null}
           </Row>
         ))}
       </Card>

@@ -240,3 +240,66 @@ do $$ begin
   assert (select round(lat::numeric, 2) from public.my_location()) = 24.80, 'it is f1''s location';
 end $$;
 reset role;
+
+-- Safety: blocking hides sessions and messages; ratings -----------------------
+reset role;
+insert into auth.users (id) values ('00000000-0000-0000-0000-0000000000f4'), ('00000000-0000-0000-0000-0000000000f5');
+insert into public.profiles (id, first_name, gender) values
+  ('00000000-0000-0000-0000-0000000000f4', 'هند', 'f'), ('00000000-0000-0000-0000-0000000000f5', 'وعد', 'f');
+-- f4 hosts a session that already started; f5 is a member and has chatted.
+insert into public.sessions (id, gender, hobby_id, venue_id, host_id, starts_at, capacity) values
+  ('20000000-0000-0000-0000-000000000004', 'f', 'padel', '10000000-0000-0000-0000-000000000001',
+   '00000000-0000-0000-0000-0000000000f4', now() - interval '2 hours', 4);
+insert into public.session_members (session_id, user_id) values
+  ('20000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-0000000000f4'),
+  ('20000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-0000000000f5');
+insert into public.messages (session_id, author_id, body) values
+  ('20000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-0000000000f4', 'رسالة هند');
+
+set role authenticated;
+set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000f5';
+do $$ begin
+  assert (select count(*) from public.messages where session_id = '20000000-0000-0000-0000-000000000004') = 1, 'member reads the chat';
+end $$;
+
+-- f5 rates the finished session; the venue rating updates. Rating twice fails.
+insert into public.session_ratings (session_id, user_id, stars)
+values ('20000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-0000000000f5', 4);
+do $$ begin
+  assert (select rating from public.venues where id = '10000000-0000-0000-0000-000000000001') = 4.0, 'venue rating updated';
+  assert (select rating_count from public.venues where id = '10000000-0000-0000-0000-000000000001') = 1, 'rating count updated';
+  insert into public.session_ratings (session_id, user_id, stars)
+  values ('20000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-0000000000f5', 5);
+  raise exception 'SHOULD FAIL: rated twice';
+exception when others then if sqlerrm like 'SHOULD FAIL%' then raise; end if;
+end $$;
+
+-- Non-members cannot rate, and nobody can rate a session that has not started.
+set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000f2';
+do $$ begin
+  insert into public.session_ratings (session_id, user_id, stars)
+  values ('20000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-0000000000f2', 5);
+  raise exception 'SHOULD FAIL: non-member rated';
+exception when others then if sqlerrm like 'SHOULD FAIL%' then raise; end if;
+end $$;
+
+-- f5 blocks f4: f4's session and messages disappear, and my_blocks lists her.
+set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000f5';
+insert into public.blocks (blocker_id, blocked_id) values ('00000000-0000-0000-0000-0000000000f5', '00000000-0000-0000-0000-0000000000f4');
+do $$ begin
+  assert (select count(*) from public.sessions where id = '20000000-0000-0000-0000-000000000004') = 0, 'blocked host''s session is hidden';
+  assert (select count(*) from public.messages where author_id = '00000000-0000-0000-0000-0000000000f4') = 0, 'blocked person''s messages are hidden';
+  assert (select first_name from public.my_blocks() limit 1) = 'هند', 'my_blocks lists the blocked person';
+end $$;
+-- And f4 no longer sees f5 either.
+set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000f4';
+do $$ begin
+  assert (select count(*) from public.profiles where id = '00000000-0000-0000-0000-0000000000f5') = 0, 'blocking hides both ways';
+end $$;
+-- Unblocking brings things back.
+set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000f5';
+delete from public.blocks where blocked_id = '00000000-0000-0000-0000-0000000000f4';
+do $$ begin
+  assert (select count(*) from public.sessions where id = '20000000-0000-0000-0000-000000000004') = 1, 'unblock restores the session';
+end $$;
+reset role;

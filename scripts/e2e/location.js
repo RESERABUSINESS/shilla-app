@@ -7,7 +7,7 @@ const mk=async(n,lat,lng)=>{const c=await b.newContext({viewport:{width:390,heig
 const step=async(n,f)=>{try{await f();console.log('OK',n)}catch(e){console.log('FAIL',n,e.message.split('\n')[0]);throw e}};
 const signup=async(p,name,city)=>{await p.goto(URL);await p.getByText('أنشئ حساب',{exact:true}).click();
  await p.getByPlaceholder('اسمك').fill(name);await p.getByPlaceholder('name@example.com').fill(`qa-loc-${R}-${Math.random().toString(36).slice(2,6)}@mailinator.com`);await p.getByPlaceholder('٦ أحرف أو أكثر').fill('Shilla2026!');
- await p.getByText('شاب',{exact:true}).click();await p.getByText(city,{exact:true}).click();await p.getByText('التالي: اختر هواياتك').click();
+ await p.getByText('شاب',{exact:true}).click();await p.getByText(city,{exact:true}).click();await p.getByLabel('أوافق على الشروط وقواعد المجتمع').click();await p.getByText('التالي: اختر هواياتك').click();
  await p.getByText('جري',{exact:true}).click();await p.getByText(/يلا نبدأ/).click();await p.getByText('قريب منك هالأسبوع').waitFor({timeout:20000});};
 const RUH=await mk('RUH',24.81,46.62), JED=await mk('JED',21.55,39.17);
 await step('Riyadh user signs up and creates a session',async()=>{await signup(RUH,'رياضيتست','الرياض');await RUH.getByText('جلسة جديدة').click();await RUH.getByText('انشر الجلسة').waitFor();await RUH.getByText('بكرة',{exact:true}).click();await RUH.getByText('انشر الجلسة').click();await RUH.getByText('جلستك').first().waitFor({timeout:20000});});

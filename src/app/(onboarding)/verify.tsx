@@ -2,7 +2,8 @@ import { router } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
 import { useOnboarding } from '@/components/onboarding';
-import { Button, Chip, ChipRow, Field, isValidEmail, Row, Screen, T } from '@/components/ui';
+import { Icon } from '@/components/Icon';
+import { Button, Chip, ChipRow, Field, isValidEmail, Row, Screen, T, useTheme } from '@/components/ui';
 import { CITIES } from '@/lib/cities';
 import { useColors } from '@/lib/theme';
 import type { Gender } from '@/lib/types';
@@ -12,10 +13,11 @@ import type { Gender } from '@/lib/types';
 
 export default function CreateAccount() {
   const { draft, update } = useOnboarding();
+  const base = useTheme();
   const nameOk = draft.firstName.trim().length >= 2;
   const emailOk = isValidEmail(draft.email);
   const passwordOk = draft.password.length >= 6;
-  const canContinue = nameOk && emailOk && passwordOk && draft.gender !== null && draft.cityId !== null;
+  const canContinue = nameOk && emailOk && passwordOk && draft.gender !== null && draft.cityId !== null && draft.agreed;
 
   return (
     <Screen footer={<Button label="التالي: اختر هواياتك" disabled={!canContinue} onPress={() => router.push('/hobbies')} />}>
@@ -59,6 +61,21 @@ export default function CreateAccount() {
         ))}
       </ChipRow>
       <T variant="small">إذا سمحت بالموقع، ناخذ حيّك بالضبط ونعرض لك الأقرب. وإذا لا، نستخدم مدينتك.</T>
+
+      <Row style={{ gap: 10 }}>
+        <Pressable
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: draft.agreed }}
+          accessibilityLabel="أوافق على الشروط وقواعد المجتمع"
+          onPress={() => update({ agreed: !draft.agreed })}
+          hitSlop={8}>
+          <Icon name={draft.agreed ? 'checkbox' : 'square-outline'} size={26} color={draft.agreed ? base.accent : base.muted} />
+        </Pressable>
+        <T>أوافق على</T>
+        <Pressable accessibilityRole="link" onPress={() => router.push('/terms')} hitSlop={8} style={{ flex: 1 }}>
+          <T style={{ fontWeight: '700', textDecorationLine: 'underline' }}>الشروط وقواعد المجتمع</T>
+        </Pressable>
+      </Row>
 
       <Pressable accessibilityRole="link" onPress={() => router.replace('/login')} style={{ paddingVertical: 8 }}>
         <T style={{ textAlign: 'center', fontWeight: '700' }}>عندك حساب؟ سجّل دخول</T>

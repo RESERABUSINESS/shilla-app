@@ -73,6 +73,7 @@ export type Session = {
   startsAtLabel: string;
   /** ISO time; used for reminders. Missing in sample data. */
   startsAt?: string;
+  status?: 'open' | 'cancelled' | 'done';
   level: number;
   hostId: string;
   hostName: string;
@@ -96,3 +97,5 @@ export type Person = {
   distanceKm: number;
   availability: string;
 };
+
+export type BlockedPerson = { id: string; firstName: string };

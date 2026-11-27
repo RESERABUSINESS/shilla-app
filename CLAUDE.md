@@ -92,7 +92,8 @@ the change touches `supabase/`, `npm run test:db` passes.
 src/app/(onboarding)/   welcome, verify, hobbies (sign-up flow)
 src/app/(tabs)/         sessions, places (map + list), people, profile
 src/app/session/        new, [id] (details), chat/[id], invite/[id]
-src/app/                notifications, settings, suggest-venue, invite-person/[id], edit-hobbies
+src/app/                notifications, settings, suggest-venue, invite-person/[id], edit-hobbies,
+                        safety/[id] (report/block), blocked, my-sessions (+ ratings), terms
 src/components/         shared UI (ui.tsx), SessionCard, HobbyPicker, HobbyFilter, VenueMap (+ .web), Icon
 src/lib/                hobbies catalog, types, store (state), remote (Supabase), notifications,
                         confirm (dialogs that also work on web), theme, format, fonts

@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { Pressable } from 'react-native';
 import { useState } from 'react';
 
 import { HobbyFilter } from '@/components/HobbyFilter';
@@ -34,6 +35,12 @@ export default function People() {
                 <Tag key={h} tone="accent" label={`${hobby(h).emoji} ${hobby(h).name} · ${levelLabel(h, p.hobbies[h])}`} />
               ))}
             </Row>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push({ pathname: '/safety/[id]', params: { id: p.id, name: p.firstName } })}
+              style={{ alignSelf: 'flex-start' }}>
+              <T variant="small">إبلاغ أو حظر</T>
+            </Pressable>
             <Button
               label={f ? 'ادعيها لجلسة' : 'ادعه لجلسة'}
               onPress={() => (online ? router.push(`/invite-person/${p.id}`) : notice('الدعوات', 'الدعوات تحتاج الاتصال بالخادم.'))}

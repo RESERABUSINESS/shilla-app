@@ -8,7 +8,7 @@ import { CITIES, cityById, nearestCity } from './cities';
 import { formatDuration, formatStartsAt } from './format';
 import { hobby } from './hobbies';
 import { supabase } from './supabase';
-import type { AppNotification, ChatMessage, Gender, HobbyLevels, NotifyPrefs, Person, Profile, Session, Venue, VenueAudience } from './types';
+import type { AppNotification, BlockedPerson, ChatMessage, Gender, HobbyLevels, NotifyPrefs, Person, Profile, Session, Venue, VenueAudience } from './types';
 
 const LOCATION_KEY = 'shilla.location.v1';
 /** Central Riyadh: used only before the user has any saved location. */
@@ -344,6 +344,7 @@ export async function suggestVenue(s: SuggestInput): Promise<string> {
 type SessionRow = {
   id: string;
   kind: 'meetup' | 'workshop';
+  status: Session['status'];
   gender: Gender;
   hobby_id: string;
   venue_id: string;
@@ -359,7 +360,7 @@ type SessionRow = {
 };
 
 const SESSION_SELECT =
-  'id, kind, gender, hobby_id, venue_id, host_id, starts_at, duration_minutes, level, capacity, price_sar, ' +
+  'id, kind, status, gender, hobby_id, venue_id, host_id, starts_at, duration_minutes, level, capacity, price_sar, ' +
   'venue:venues(name, audience), host:profiles!sessions_host_id_fkey(first_name), ' +
   'session_members(user_id, profile:profiles(first_name))';
 
@@ -374,6 +375,7 @@ function toSession(r: SessionRow): Session {
     venueName: r.venue?.name,
     startsAtLabel: formatStartsAt(new Date(r.starts_at)) + womenSlot,
     startsAt: r.starts_at,
+    status: r.status,
     level: r.level,
     hostId: r.host_id,
     hostName: r.host?.first_name ?? '',
@@ -569,4 +571,54 @@ export function subscribeNotifications(userId: string, onNew: () => void) {
   return () => {
     db().removeChannel(channel);
   };
+}
+
+// ---------------------------------------------------------------------------
+// My sessions, ratings, safety
+// ---------------------------------------------------------------------------
+
+/** Sessions the user hosts or joined, newest first, including past and cancelled ones. */
+export async function loadMySessions(userId: string): Promise<Session[]> {
+  const { data, error } = await db()
+    .from('sessions')
+    .select(`${SESSION_SELECT}, mine:session_members!inner(user_id)`)
+    .eq('mine.user_id', userId)
+    .order('starts_at', { ascending: false })
+    .limit(50);
+  if (error) throw error;
+  return (data as unknown as SessionRow[]).map(toSession);
+}
+
+export async function loadRatedSessionIds(): Promise<string[]> {
+  const { data, error } = await db().from('session_ratings').select('session_id');
+  if (error) throw error;
+  return (data ?? []).map((r) => r.session_id as string);
+}
+
+export async function rateSession(userId: string, sessionId: string, stars: number) {
+  const { error } = await db().from('session_ratings').insert({ session_id: sessionId, user_id: userId, stars });
+  if (error) throw error;
+}
+
+export async function blockUser(userId: string, blockedId: string) {
+  const { error } = await db().from('blocks').insert({ blocker_id: userId, blocked_id: blockedId });
+  if (error && !error.message.includes('duplicate key')) throw error;
+}
+
+export async function unblockUser(userId: string, blockedId: string) {
+  const { error } = await db().from('blocks').delete().eq('blocker_id', userId).eq('blocked_id', blockedId);
+  if (error) throw error;
+}
+
+export async function loadBlocks(): Promise<BlockedPerson[]> {
+  const { data, error } = await db().rpc('my_blocks');
+  if (error) throw error;
+  return (data as { user_id: string; first_name: string }[]).map((b) => ({ id: b.user_id, firstName: b.first_name }));
+}
+
+export async function reportUser(reporterId: string, reportedId: string, reason: string, sessionId?: string) {
+  const { error } = await db()
+    .from('reports')
+    .insert({ reporter_id: reporterId, reported_user_id: reportedId, reason, session_id: sessionId ?? null });
+  if (error) throw error;
 }

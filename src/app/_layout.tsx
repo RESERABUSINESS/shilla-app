@@ -28,6 +28,7 @@ function RootNavigator() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
+      <Stack.Screen name="terms" options={{ presentation: 'modal' }} />
       <Stack.Protected guard={!profile}>
         <Stack.Screen name="(onboarding)" />
       </Stack.Protected>
@@ -41,6 +42,9 @@ function RootNavigator() {
         <Stack.Screen name="notifications" options={{ presentation: 'modal' }} />
         <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
         <Stack.Screen name="suggest-venue" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="safety/[id]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="blocked" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="my-sessions" options={{ presentation: 'modal' }} />
         <Stack.Screen name="edit-hobbies" options={{ presentation: 'modal' }} />
       </Stack.Protected>
     </Stack>

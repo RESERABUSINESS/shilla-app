@@ -1,0 +1,23 @@
+// Report, block (both ways), blocked list and unblock; my sessions; terms.
+const {chromium}=require('playwright');
+const URL=process.env.E2E_URL||'http://localhost:8097/';const R=Date.now().toString(36);
+(async()=>{const b=await chromium.launch();const errs=[];
+const mk=async(n)=>{const c=await b.newContext({viewport:{width:390,height:844},geolocation:{latitude:24.81,longitude:46.62},permissions:['geolocation']});const p=await c.newPage();p.on('dialog',d=>d.accept());p.on('pageerror',e=>errs.push(n+': '+e.message));return p;};
+const step=async(n,f)=>{try{await f();console.log('OK',n)}catch(e){console.log('FAIL',n,e.message.split('\n')[0]);throw e}};
+const signup=async(p,name)=>{await p.goto(URL);await p.getByText('أنشئ حساب',{exact:true}).click();
+ await p.getByPlaceholder('اسمك').fill(name);await p.getByPlaceholder('name@example.com').fill(`qa-safe-${R}-${Math.random().toString(36).slice(2,6)}@mailinator.com`);await p.getByPlaceholder('٦ أحرف أو أكثر').fill('Shilla2026!');
+ await p.getByText('شاب',{exact:true}).click();await p.getByText('الرياض',{exact:true}).click();
+ await p.getByLabel('أوافق على الشروط وقواعد المجتمع').click();await p.getByText('التالي: اختر هواياتك').click();
+ await p.getByText('جري',{exact:true}).click();await p.getByText(/يلا نبدأ/).click();await p.getByText('قريب منك هالأسبوع').waitFor({timeout:20000});};
+const A=await mk('A'),B=await mk('B');
+await step('terms must be accepted to sign up',async()=>{await A.goto(URL);await A.getByText('أنشئ حساب',{exact:true}).click();await A.getByPlaceholder('اسمك').fill('تجربة');await A.getByPlaceholder('name@example.com').fill('x@mailinator.com');await A.getByPlaceholder('٦ أحرف أو أكثر').fill('Shilla2026!');await A.getByText('شاب',{exact:true}).click();await A.getByText('الرياض',{exact:true}).click();
+  const btn=A.getByRole('button',{name:'التالي: اختر هواياتك'});if(!(await btn.isDisabled()))throw new Error('continue enabled without accepting terms');
+  await A.getByText('الشروط وقواعد المجتمع').click();await A.getByText('قواعد شلة').waitFor();});
+await step('A signs up and creates a session',async()=>{await signup(A,'عادلتست');await A.getByText('جلسة جديدة').click();await A.getByText('انشر الجلسة').waitFor();await A.getByText('بكرة',{exact:true}).click();await A.getByText('انشر الجلسة').click();await A.getByText('جلستك').first().waitFor({timeout:20000});});
+await step('A sees it in my sessions',async()=>{await A.goto(URL+'my-sessions');await A.getByText('أنت المنظم').waitFor({timeout:15000});});
+await step('B signs up and joins',async()=>{await signup(B,'باسمتست');await B.getByText(/ينظمها: عادلتست/).first().waitFor({timeout:20000});await B.getByText('انضم',{exact:true}).first().click();await B.getByText('منضم ✓').first().waitFor({timeout:20000});});
+await step('B reports A',async()=>{await B.getByText('التفاصيل').first().click().catch(()=>{});await B.getByText('المحادثة').first().click();await B.waitForURL(/session\/chat\//);const sid=B.url().split('/').pop();globalThis.SID=sid;await B.goto(URL+'session/'+sid);await B.getByLabel('إبلاغ أو حظر عادلتست').click();await B.getByText('إزعاج أو تحرش').click();await B.getByText('أرسل البلاغ').click();await B.waitForTimeout(2000);});
+await step('B blocks A; session disappears',async()=>{await B.getByText('احظر عادلتست',{exact:true}).last().click();await B.waitForTimeout(2500);await B.goto(URL+'sessions');await B.waitForTimeout(3000);if(await B.getByText(/عادلتست/).count())throw new Error('blocked host still visible');});
+await step('A no longer sees B either',async()=>{await A.goto(URL+'people');await A.waitForTimeout(3000);if(await A.getByText('باسمتست').count())throw new Error('blocked person visible to A');});
+await step('B unblocks A from settings; session returns',async()=>{await B.goto(URL+'blocked');await B.getByText('عادلتست').waitFor({timeout:15000});await B.getByText('ألغِ الحظر').click();await B.waitForTimeout(2500);await B.goto(URL+'sessions');await B.getByText(/عادلتست/).first().waitFor({timeout:20000});});
+console.log('errors',errs.slice(0,5));await b.close();process.exit(0);})().catch(()=>process.exit(1));

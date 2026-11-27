@@ -11,6 +11,7 @@ node scripts/e2e/auth.js
 node scripts/e2e/multi.js
 node scripts/e2e/social.js
 node scripts/e2e/location.js
+node scripts/e2e/safety.js
 ```
 
 If `playwright` is installed globally rather than in the project, prefix each

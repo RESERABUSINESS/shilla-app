@@ -18,7 +18,7 @@ import { hobby } from './hobbies';
 import * as notify from './notifications';
 import * as remote from './remote';
 import { isSupabaseConfigured } from './supabase';
-import type { AppNotification, ChatMessage, HobbyLevels, NotifyPrefs, Person, Profile, Session, Venue } from './types';
+import type { AppNotification, BlockedPerson, ChatMessage, HobbyLevels, NotifyPrefs, Person, Profile, Session, Venue } from './types';
 
 const DEFAULT_NOTIFY: NotifyPrefs = { push: true, messages: true, reminders: true };
 
@@ -60,6 +60,16 @@ type Store = {
   /** Sets the location to a city's centre, for people who do not share location. */
   setCity: (cityId: string) => Promise<void>;
   deleteAccount: () => Promise<void>;
+  /** Sessions I host or joined, past and upcoming (loaded on demand). */
+  mySessions: Session[];
+  ratedIds: string[];
+  loadMySessions: () => Promise<void>;
+  rateSession: (sessionId: string, stars: number) => Promise<void>;
+  blocked: BlockedPerson[];
+  loadBlocked: () => Promise<void>;
+  block: (personId: string) => Promise<void>;
+  unblock: (personId: string) => Promise<void>;
+  report: (personId: string, reason: string, sessionId?: string) => Promise<void>;
   signOut: () => Promise<void>;
   /** Sample mode only: append a chat message locally. */
   addSampleMessage: (sessionId: string, text: string) => void;
@@ -87,6 +97,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [remoteMatches, setRemoteMatches] = useState<Match[]>([]);
   const [sampleSessions, setSampleSessions] = useState<Session[]>(SAMPLE_SESSIONS);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [mySessions, setMySessions] = useState<Session[]>([]);
+  const [ratedIds, setRatedIds] = useState<string[]>([]);
+  const [blocked, setBlocked] = useState<BlockedPerson[]>([]);
   const signedInGender = profile?.gender;
 
   const load = useCallback(async () => {
@@ -192,6 +205,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .then((token) => (token ? remote.savePushToken(signedInId, token, Platform.OS) : undefined))
       .catch(() => {});
   }, [online, signedInId, wantsPush]);
+
+  // Stable loaders: screens call these from effects, so their identity must not
+  // change on every store update.
+  const loadMySessions = useCallback(async () => {
+    if (!online || !signedInId) return;
+    const [list, rated] = await Promise.all([remote.loadMySessions(signedInId), remote.loadRatedSessionIds()]);
+    setMySessions(list);
+    setRatedIds(rated);
+  }, [online, signedInId]);
+
+  const loadBlocked = useCallback(async () => {
+    if (online && signedInId) setBlocked(await remote.loadBlocks());
+  }, [online, signedInId]);
 
   const persistLocal = useCallback((p: Profile | null) => {
     setProfile(p);
@@ -411,6 +437,41 @@ export function AppProvider({ children }: { children: ReactNode }) {
         } else persistLocal({ ...profile, city: place.city, district: '' });
       },
 
+      mySessions: online
+        ? mySessions
+        : sampleSessions.filter((s) => s.hostId === profile?.id || s.members.some((m) => m.id === profile?.id)),
+      ratedIds,
+
+      loadMySessions,
+
+      rateSession: async (sessionId, stars) => {
+        if (!online || !profile) return;
+        await remote.rateSession(profile.id, sessionId, stars);
+        setRatedIds((ids) => [...ids, sessionId]);
+      },
+
+      blocked,
+
+      loadBlocked,
+
+      block: async (personId) => {
+        if (!online || !profile) return;
+        await remote.blockUser(profile.id, personId);
+        await Promise.all([refresh(), remote.loadBlocks().then(setBlocked)]);
+      },
+
+      unblock: async (personId) => {
+        if (!online || !profile) return;
+        await remote.unblockUser(profile.id, personId);
+        setBlocked((list) => list.filter((b) => b.id !== personId));
+        await refresh();
+      },
+
+      report: async (personId, reason, sessionId) => {
+        if (!online || !profile) return;
+        await remote.reportUser(profile.id, personId, reason, sessionId);
+      },
+
       deleteAccount: async () => {
         if (online) await remote.deleteAccount();
         notify.cancelAllReminders();
@@ -442,7 +503,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }));
       },
     };
-  }, [ready, online, profile, refreshing, refresh, anonymous, remoteSessions, remoteVenues, remoteMatches, sampleSessions, notifications, persistLocal]);
+  }, [ready, online, profile, refreshing, refresh, anonymous, remoteSessions, remoteVenues, remoteMatches, sampleSessions, notifications, mySessions, ratedIds, blocked, loadMySessions, loadBlocked, persistLocal]);
 
   return <Ctx.Provider value={store}>{children}</Ctx.Provider>;
 }

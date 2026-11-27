@@ -110,6 +110,12 @@ export default function Settings() {
       </Card>
 
       <Card>
+        <T style={{ fontWeight: '700' }}>الأمان</T>
+        <Button kind="secondary" label="المحظورين" onPress={() => router.push('/blocked')} />
+        <Button kind="secondary" label="الشروط وقواعد المجتمع" onPress={() => router.push('/terms')} />
+      </Card>
+
+      <Card>
         <T style={{ fontWeight: '700' }}>شارك شلة</T>
         <Button
           kind="secondary"

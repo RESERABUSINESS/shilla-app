@@ -8,7 +8,7 @@ const step=async(n,f)=>{try{await f();console.log('OK',n)}catch(e){console.log('
 const R=Date.now().toString(36);
 const signup=async(p,name,g)=>{await p.goto(URL);await p.getByText('أنشئ حساب',{exact:true}).click();
  await p.getByPlaceholder('اسمك').fill(name);await p.getByPlaceholder('name@example.com').fill(`qa-${name.length}-${g}-${R}-${Math.random().toString(36).slice(2,6)}@mailinator.com`);await p.getByPlaceholder('٦ أحرف أو أكثر').fill('Shilla2026!');
- await p.getByText(g==='f'?'بنت':'شاب',{exact:true}).click();await p.getByText('الرياض',{exact:true}).click();await p.getByText('التالي: اختر هواياتك').click();
+ await p.getByText(g==='f'?'بنت':'شاب',{exact:true}).click();await p.getByText('الرياض',{exact:true}).click();await p.getByLabel('أوافق على الشروط وقواعد المجتمع').click();await p.getByText('التالي: اختر هواياتك').click();
  await p.getByText('بادل',{exact:true}).click();await p.getByText(/يلا نبدأ/).click();
  await p.getByText('قريب منك هالأسبوع').waitFor({timeout:20000});};
 const A=await mk('A'),B=await mk('B'),C=await mk('C');
@@ -27,5 +27,5 @@ await step('C cannot see men session',async()=>{await C.reload();await C.getByTe
 await step('B people sees A',async()=>{await B.goto(URL+'people');await B.getByText('فهدتست',{exact:true}).waitFor({timeout:15000});});
 await step('C people has no men',async()=>{await C.goto(URL+'people');await C.waitForTimeout(4000);for(const n of ['فهدتست','سعودتست']){if(await C.getByText(n).count())throw new Error('woman sees '+n)}});
 await step('C places women view',async()=>{await C.goto(URL+'places');await C.getByText(/OpenStreetMap/).waitFor({timeout:15000});if(await C.getByText('للرجال فقط').count())throw new Error('men-only venue shown');});
-await A.screenshot({path:'m_A.png'});await B.screenshot({path:'m_B.png'});await C.screenshot({path:'m_C.png'});
+await A.screenshot({path:require('path').join(require('os').tmpdir(),'m_A.png')});await B.screenshot({path:require('path').join(require('os').tmpdir(),'m_B.png')});await C.screenshot({path:require('path').join(require('os').tmpdir(),'m_C.png')});
 console.log('errors',errs.slice(0,5));await b.close();process.exit(0);})().catch(async e=>{console.log('ABORT');process.exit(1)});

@@ -45,7 +45,7 @@ export default function Profile() {
 
       <Card style={{ gap: 0, paddingVertical: 4 }}>
         <MenuRow icon="notifications-outline" label="الإشعارات" badge={unread} href="/notifications" />
-        <MenuRow icon="calendar-outline" label={`جلساتي (${num(mySessions.length)})`} href="/sessions" />
+        <MenuRow icon="calendar-outline" label={`جلساتي (${num(mySessions.length)})`} href="/my-sessions" />
         <MenuRow icon="heart-outline" label="تعديل هواياتي" href="/edit-hobbies" />
         <MenuRow icon="add-circle-outline" label="اقترح مكان" href="/suggest-venue" />
         <MenuRow icon="settings-outline" label="الإعدادات" href="/settings" last />
