@@ -264,10 +264,19 @@ export function useProfile(): Profile {
 
 /** Chat for one session: live from Supabase, or the sample session's messages. */
 export function useChat(session: Session | undefined) {
-  const { online, profile, addSampleMessage } = useApp();
+  const { online, profile, addSampleMessage, refresh } = useApp();
+  const sessionId = session?.id;
+  const refreshRef = useRef(refresh);
+  useEffect(() => {
+    refreshRef.current = refresh;
+  }, [refresh]);
+
+  // Opening a chat refreshes sessions so the member list and count are current.
+  useEffect(() => {
+    if (online && sessionId) refreshRef.current().catch(() => {});
+  }, [online, sessionId]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const sessionId = session?.id;
   const names = useMemo(() => {
     const n: Record<string, string> = {};
     if (session) {
@@ -288,9 +297,16 @@ export function useChat(session: Session | undefined) {
       .loadMessages(sessionId)
       .then((m) => alive && setMessages(m))
       .catch((e) => alive && setError(remote.errorMessage(e)));
-    const unsubscribe = remote.subscribeMessages(sessionId, namesRef.current, (m) =>
-      setMessages((list) => (list.some((x) => x.id === m.id) ? list : [...list, { ...m, author: m.author || namesRef.current[m.authorId] || '' }])),
-    );
+    const unsubscribe = remote.subscribeMessages(sessionId, namesRef.current, (m) => {
+      const author = m.author || namesRef.current[m.authorId];
+      if (!author) {
+        // Someone new joined since the session list loaded: reload to get their name.
+        remote.loadMessages(sessionId).then((all) => alive && setMessages(all)).catch(() => {});
+        refreshRef.current().catch(() => {});
+        return;
+      }
+      setMessages((list) => (list.some((x) => x.id === m.id) ? list : [...list, { ...m, author }]));
+    });
     return () => {
       alive = false;
       unsubscribe();
