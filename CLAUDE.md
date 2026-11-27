@@ -42,7 +42,8 @@ academies can post paid workshops. Launch market: Riyadh, Saudi Arabia.
 - `.env` holds the Supabase URL and publishable key (public by design; RLS protects
   the data). Without them the app runs on sample data from `src/data/sample.ts`.
 - Data access lives in `src/lib/remote.ts`; `src/lib/store.tsx` picks Supabase or
-  sample mode. Sign-in is anonymous for now (TODO: phone OTP, then Nafath).
+  sample mode. Accounts use email + password (TODO: phone OTP, then Nafath);
+  a few early accounts are anonymous and get a prompt to create an email account.
 - Supabase project: `shilla` (ref `lgfbdiuhzksyogllvjlg`). Apply new migrations
   there after `npm run test:db` passes. `supabase/seed_sample_venues.sql` holds
   fictional test venues.
