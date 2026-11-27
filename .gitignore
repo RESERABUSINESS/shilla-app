@@ -41,3 +41,6 @@ example
 # generated native folders
 /ios
 /android
+
+# Thmanyah font: license forbids uploading or hosting the files. Store builds only.
+assets/fonts/thmanyah/

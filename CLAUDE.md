@@ -47,6 +47,20 @@ academies can post paid workshops. Launch market: Riyadh, Saudi Arabia.
   there after `npm run test:db` passes. `supabase/seed_sample_venues.sql` holds
   fictional test venues.
 
+## Thmanyah font (do not forget before a store build)
+
+The app is designed for the Thmanyah Sans font (خط ثمانية). Its license allows
+embedding in a packaged app but forbids uploading or hosting the font files, so:
+
+- Never commit the font files, never put them in the web build, and never let
+  them ship inside an Expo Update. `assets/fonts/thmanyah/` is gitignored.
+- `app.config.js` embeds them only when `SHILLA_EMBED_FONTS=1` and the files are
+  in `assets/fonts/thmanyah/` (`thmanyahsans-{Light,Regular,Medium,Bold,Black}.otf`).
+  `src/lib/fonts.ts` switches the UI to the font only in such builds.
+- **Before the first App Store / Google Play build, remind the user** to provide
+  the font zip (from thmanyah.com), then follow the launch checklist in
+  `docs/ROADMAP.md`. Tracked in GitHub issue RESERABUSINESS/shilla-app#1.
+
 ## Commands
 
 ```bash

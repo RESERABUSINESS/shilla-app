@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps, type PressableProps, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { withAppFont } from '@/lib/fonts';
 import { useApp } from '@/lib/store';
 import { radius, space, useColors, type Colors } from '@/lib/theme';
 
@@ -55,7 +56,7 @@ export function T({ children, variant = 'body', style, numberOfLines }: { childr
     small: { fontSize: 12.5, color: c.muted },
   };
   return (
-    <Text numberOfLines={numberOfLines} style={[{ textAlign: 'left', writingDirection: 'rtl' }, v[variant], style]}>
+    <Text numberOfLines={numberOfLines} style={withAppFont([{ textAlign: 'left', writingDirection: 'rtl' }, v[variant], style])}>
       {children}
     </Text>
   );
@@ -83,7 +84,7 @@ export function Button({ label, kind = 'primary', style, ...rest }: PressablePro
         style,
       ]}
       {...rest}>
-      <Text style={[styles.buttonText, { color: fg }]}>{label}</Text>
+      <Text style={withAppFont([styles.buttonText, { color: fg }])}>{label}</Text>
     </Pressable>
   );
 }
@@ -96,7 +97,7 @@ export function Chip({ label, on, onPress }: { label: string; on?: boolean; onPr
       accessibilityState={{ selected: on }}
       onPress={onPress}
       style={[styles.chip, { backgroundColor: on ? c.accent : c.surface, borderColor: on ? c.accent : c.border }]}>
-      <Text style={{ color: on ? c.onAccent : c.text, fontSize: 13, fontWeight: '600' }}>{label}</Text>
+      <Text style={withAppFont({ color: on ? c.onAccent : c.text, fontSize: 13, fontWeight: '600' })}>{label}</Text>
     </Pressable>
   );
 }
@@ -110,7 +111,7 @@ export function Tag({ label, tone = 'neutral' }: { label: string; tone?: 'neutra
   }[tone];
   return (
     <View style={[styles.tag, { backgroundColor: map.bg, borderColor: map.border }]}>
-      <Text style={{ color: map.fg, fontSize: 11.5, fontWeight: '700' }}>{label}</Text>
+      <Text style={withAppFont({ color: map.fg, fontSize: 11.5, fontWeight: '700' })}>{label}</Text>
     </View>
   );
 }
@@ -140,7 +141,7 @@ export function Avatar({ name, size = 28, hidden }: { name: string; size?: numbe
   const c = useTheme();
   return (
     <View style={{ width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: hidden ? c.surfaceAlt : c.surfaceAlt, borderWidth: 2, borderColor: c.surface }}>
-      <Text style={{ color: hidden ? c.muted : c.accent, fontWeight: '700', fontSize: size * 0.42 }}>{hidden ? '•' : name.trim()[0]}</Text>
+      <Text style={withAppFont({ color: hidden ? c.muted : c.accent, fontWeight: '700', fontSize: size * 0.42 })}>{hidden ? '•' : name.trim()[0]}</Text>
     </View>
   );
 }
@@ -149,7 +150,7 @@ export function Notice({ children }: { children: ReactNode }) {
   const c = useTheme();
   return (
     <View style={[styles.notice, { borderColor: c.accent, backgroundColor: c.surface }]}>
-      <Text style={{ color: c.text, fontSize: 13, lineHeight: 21, textAlign: 'left' }}>🔒 {children}</Text>
+      <Text style={withAppFont({ color: c.text, fontSize: 13, lineHeight: 21, textAlign: 'left' })}>🔒 {children}</Text>
     </View>
   );
 }
@@ -186,7 +187,7 @@ export function Field({ label, ...rest }: TextInputProps & { label: string }) {
         placeholderTextColor={c.muted}
         accessibilityLabel={label}
         {...rest}
-        style={{ borderWidth: 1, borderColor: c.border, backgroundColor: c.surface, color: c.text, borderRadius: 12, padding: 12, fontSize: 16, textAlign: 'right' }}
+        style={withAppFont({ borderWidth: 1, borderColor: c.border, backgroundColor: c.surface, color: c.text, borderRadius: 12, padding: 12, fontSize: 16, textAlign: 'right' })}
       />
     </View>
   );

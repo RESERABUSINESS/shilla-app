@@ -7,4 +7,9 @@ module.exports = defineConfig([
   {
     ignores: ['dist/*', '.expo/*'],
   },
+  {
+    // Config files run in Node.
+    files: ['app.config.js'],
+    languageOptions: { globals: { __dirname: 'readonly', process: 'readonly', require: 'readonly', module: 'writable' } },
+  },
 ]);

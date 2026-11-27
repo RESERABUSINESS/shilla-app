@@ -1,7 +1,8 @@
 import { Tabs } from 'expo-router/js-tabs';
-import { Text, type ColorValue } from 'react-native';
+import { Text, type ColorValue, type TextStyle } from 'react-native';
 
 import { useTheme } from '@/components/ui';
+import { withAppFont } from '@/lib/fonts';
 
 const icon = (glyph: string) =>
   function TabIcon({ color }: { color: ColorValue }) {
@@ -17,6 +18,7 @@ export default function TabsLayout() {
         tabBarActiveTintColor: c.accent,
         tabBarInactiveTintColor: c.muted,
         tabBarStyle: { backgroundColor: c.surface, borderTopColor: c.border },
+        tabBarLabelStyle: withAppFont({ fontSize: 11, fontWeight: '500' }) as TextStyle,
       }}>
       <Tabs.Screen name="sessions" options={{ title: 'الجلسات', tabBarIcon: icon('▦') }} />
       <Tabs.Screen name="places" options={{ title: 'الأماكن', tabBarIcon: icon('⌖') }} />

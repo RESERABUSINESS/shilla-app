@@ -5,6 +5,7 @@ import { Pressable, Text, View } from 'react-native';
 import { HobbyFilter, matchesFilter } from '@/components/HobbyFilter';
 import { SessionCard } from '@/components/SessionCard';
 import { Chip, ChipRow, Empty, Row, Screen, T, Tag, useTheme } from '@/components/ui';
+import { withAppFont } from '@/lib/fonts';
 import { genderWorld } from '@/lib/format';
 import { useApp, useProfile } from '@/lib/store';
 import type { SessionKind } from '@/lib/types';
@@ -37,7 +38,7 @@ export default function Sessions() {
         accessibilityRole="button"
         onPress={() => router.push('/session/new')}
         style={{ position: 'absolute', bottom: 20, end: 16, backgroundColor: c.accent, borderRadius: 16, paddingVertical: 13, paddingHorizontal: 18, elevation: 4 }}>
-        <Text style={{ color: c.onAccent, fontWeight: '700', fontSize: 15 }}>＋ جلسة جديدة</Text>
+        <Text style={withAppFont({ color: c.onAccent, fontWeight: '700', fontSize: 15 })}>＋ جلسة جديدة</Text>
       </Pressable>
     </View>
   );
