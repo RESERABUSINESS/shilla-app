@@ -98,6 +98,6 @@ src/lib/                hobbies catalog, types, store (state), remote (Supabase)
                         confirm (dialogs that also work on web), theme, format, fonts
 supabase/migrations/    schema, RLS, triggers, RPC functions
 supabase/seed.sql       hobby catalog
-supabase/import_osm_venues.sql  re-runnable import of real Riyadh venues from OpenStreetMap
+supabase/import_osm_venues.sql  re-runnable import of real venues (6 cities) from OpenStreetMap
 scripts/db-test/        runs the migration on local Postgres and checks the rules
 ```
